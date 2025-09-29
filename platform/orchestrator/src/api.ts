@@ -419,7 +419,7 @@ app.post('/api/bots/test/discord', authenticate, async (req, res) => {
       return res.json({ valid: false, error: 'Invalid Discord token' });
     }
     
-    const botInfo = await response.json();
+    const botInfo: any = await response.json();
     
     res.json({
       valid: true,
@@ -451,7 +451,7 @@ app.post('/api/bots/test/telegram', authenticate, async (req, res) => {
       return res.json({ valid: false, error: 'Invalid Telegram token' });
     }
     
-    const result = await response.json();
+    const result: any = await response.json();
     
     if (!result.ok) {
       return res.json({ valid: false, error: 'Invalid Telegram token' });

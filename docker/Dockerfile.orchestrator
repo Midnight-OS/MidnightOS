@@ -52,6 +52,7 @@ WORKDIR /app/platform/orchestrator
 # Copy from builder
 COPY --from=builder /app/platform/orchestrator/dist ./dist
 COPY --from=builder /app/platform/orchestrator/prisma ./prisma
+COPY --from=builder /app/node_modules /app/node_modules
 
 # Create directories
 RUN mkdir -p /app/user-data && \
