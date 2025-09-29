@@ -11,6 +11,7 @@ services:
       - NODE_ENV=production
       - PORT=3002
       - DATABASE_URL=${DATABASE_URL:-prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza18ydDdlWUtUQk1XTGRZU3BsdHotcFgiLCJhcGlfa2V5IjoiMDFLNjhHV1JYMkROMEJaM0ZaSDlLVDlaTTAiLCJ0ZW5hbnRfaWQiOiIwZjIzNmUzOGUxYTBhMmFhMmI2MTY5OTMwNTJjOTIzYjU0YzNjNWY5ZmMyMGRjZjhiMDc0YTdjYjlmMDFiZjc3IiwiaW50ZXJuYWxfc2VjcmV0IjoiNGIxZWQ1MTAtY2UxYi00NTgyLWE0N2UtZWYyZmI3NThhNThkIn0.b8Qj5Wq27quYeL1ChEz5xvY5fT1HLgPR3878SYGJ_q4}
+      - DIRECT_URL=${DIRECT_URL:-database_url}
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-here}
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
@@ -39,6 +40,7 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - DATABASE_URL=${DATABASE_URL:-prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza18ydDdlWUtUQk1XTGRZU3BsdHotcFgiLCJhcGlfa2V5IjoiMDFLNjhHV1JYMkROMEJaM0ZaSDlLVDlaTTAiLCJ0ZW5hbnRfaWQiOiIwZjIzNmUzOGUxYTBhMmFhMmI2MTY5OTMwNTJjOTIzYjU0YzNjNWY5ZmMyMGRjZjhiMDc0YTdjYjlmMDFiZjc3IiwiaW50ZXJuYWxfc2VjcmV0IjoiNGIxZWQ1MTAtY2UxYi00NTgyLWE0N2UtZWYyZmI3NThhNThkIn0.b8Qj5Wq27quYeL1ChEz5xvY5fT1HLgPR3878SYGJ_q4}
+      - DIRECT_URL=${DIRECT_URL:-database_url}
       - WALLET_SERVER_HOST=midnight-mcp
       - WALLET_SERVER_PORT=3001
       - NETWORK_ID=${NETWORK_ID:-TestNet}
