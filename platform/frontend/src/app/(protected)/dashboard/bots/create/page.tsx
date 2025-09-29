@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
+import { BotDeploymentLoader } from "@/components/bot-deployment-loader"
 import { Bot, Shield, Wallet, Users, CheckCircle, AlertCircle, RefreshCw, ArrowLeft, ArrowRight, MessageSquare } from "lucide-react"
 
 interface BotFormData {
@@ -24,6 +25,8 @@ export default function CreateBotPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [deploying, setDeploying] = useState(false)
+  const [deploymentId, setDeploymentId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [testingPlatform, setTestingPlatform] = useState<string | null>(null)
   const [platformTestResults, setPlatformTestResults] = useState<Record<string, { success: boolean; message: string }>>({})
@@ -158,7 +161,14 @@ export default function CreateBotPage() {
       }
 
       const data = await response.json()
-      router.push(`/dashboard/bots/${data.bot.id}`)
+      setDeploymentId(data.bot.id)
+      setDeploying(true)
+      setLoading(false)
+      
+      // The deployment loader will handle the redirect after completion
+      setTimeout(() => {
+        router.push(`/dashboard/bots/${data.bot.id}`)
+      }, 120000) // 2 minute timeout as fallback
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create bot')
       setLoading(false)
@@ -172,13 +182,27 @@ export default function CreateBotPage() {
       case 2:
         return true // Features are optional
       case 3:
-        // At least one platform must be configured and tested
-        const hasDiscord = botData.platforms.discord?.token && platformTestResults.discord?.success
-        const hasTelegram = botData.platforms.telegram?.token && platformTestResults.telegram?.success
-        return hasDiscord || hasTelegram
+        // Platform configuration is now optional
+        // User can proceed with just WebChat or no platforms at all
+        return true
       default:
         return true
     }
+  }
+
+  // Show deployment loader when deploying
+  if (deploying) {
+    return (
+      <div className="container mx-auto py-8 max-w-4xl">
+        <BotDeploymentLoader
+          botName={botData.name}
+          deploymentId={deploymentId || undefined}
+          onComplete={() => {
+            router.push(`/dashboard/bots/${deploymentId}`)
+          }}
+        />
+      </div>
+    )
   }
 
   return (

@@ -220,7 +220,9 @@ export class ContainerManager {
   /**
    * Wait for Eliza agent container to be healthy
    */
-  private async waitForHealthy(tenantId: string, maxRetries = 30): Promise<void> {
+  private async waitForHealthy(tenantId: string, maxRetries = 60): Promise<void> {
+    console.log(`⏳ Waiting for container ${tenantId} to become healthy...`);
+    
     for (let i = 0; i < maxRetries; i++) {
       try {
         const { stdout } = await execAsync(
@@ -231,17 +233,36 @@ export class ContainerManager {
           // Check if Eliza agent is responding
           const elizaPort = this.activeContainers.get(tenantId)?.elizaPort;
           if (elizaPort) {
-            const response = await fetch(`http://localhost:${elizaPort}/health`);
-            if (response.ok) return;
+            try {
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+              
+              const response = await fetch(`http://localhost:${elizaPort}/health`, {
+                signal: controller.signal
+              });
+              
+              clearTimeout(timeout);
+              
+              if (response.ok) {
+                console.log(`✅ Container ${tenantId} is healthy after ${(i + 1) * 2} seconds`);
+                return;
+              }
+            } catch (fetchError) {
+              // Health endpoint not ready yet
+              if (i % 10 === 0 && i > 0) {
+                console.log(`⏳ Still waiting for ${tenantId}... (${i * 2}/${maxRetries * 2} seconds)`);
+              }
+            }
           }
         }
       } catch (error) {
-        // Container not ready yet
+        // Container not ready yet - this is expected during startup
       }
       
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
     
+    console.error(`❌ Container ${tenantId} failed to become healthy after ${maxRetries * 2} seconds`);
     throw new Error('Container failed to become healthy');
   }
 
