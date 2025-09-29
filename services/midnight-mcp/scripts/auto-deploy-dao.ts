@@ -112,10 +112,11 @@ class AutoDeploymentManager {
     // Create wallet config for external proof server
     const walletConfig = new TestnetRemoteConfig();
     if (this.config.networkId === 'TestNet') {
-      walletConfig.indexer = 'https://indexer.testnet-02.midnight.network/api/v1/graphql';
-      walletConfig.indexerWS = 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws';
-      walletConfig.node = 'https://rpc.testnet-02.midnight.network';
-      walletConfig.proofServer = 'https://rpc-proof-devnet.midnight.network:8443';
+      walletConfig.indexer = process.env.INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql';
+      walletConfig.indexerWS = process.env.INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws';
+      walletConfig.node = process.env.MN_NODE || 'https://rpc.testnet-02.midnight.network';
+      // Use local proof server or environment variable
+      walletConfig.proofServer = process.env.PROOF_SERVER || 'http://localhost:6300';
     }
     
     // Create wallet filename

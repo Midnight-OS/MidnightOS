@@ -266,7 +266,7 @@ const SERVICE_ENV_MAPPING = {
       // Midnight Network
       NETWORK_ID: rootEnv.NETWORK_ID || 'TestNet',
       USE_EXTERNAL_PROOF_SERVER: rootEnv.USE_EXTERNAL_PROOF_SERVER || 'true',
-      PROOF_SERVER: rootEnv.PROOF_SERVER || 'https://rpc-proof-devnet.midnight.network:8443',
+      PROOF_SERVER: rootEnv.PROOF_SERVER || 'http://localhost:6300',
       INDEXER: rootEnv.INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
       INDEXER_WS: rootEnv.INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
       MN_NODE: rootEnv.MN_NODE || 'https://rpc.testnet-02.midnight.network',
