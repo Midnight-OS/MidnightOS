@@ -41,7 +41,7 @@ export function Sidebar() {
       try {
         const token = localStorage.getItem('authToken')
         if (token) {
-          const response = await fetch('/api/bots', {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api'}/bots`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           if (response.ok) {

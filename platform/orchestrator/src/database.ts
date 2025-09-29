@@ -27,6 +27,15 @@ export class DatabaseService {
    * Create a new user
    */
   async createUser(data: { email: string; password: string; tier?: string }): Promise<any> {
+    // Check if user already exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: data.email }
+    });
+    
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
+    
     const hashedPassword = await bcrypt.hash(data.password, 10);
     
     const user = await this.prisma.user.create({

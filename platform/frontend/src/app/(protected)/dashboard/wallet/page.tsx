@@ -59,7 +59,7 @@ export default function WalletPage() {
   const fetchWallets = async () => {
     try {
       const token = localStorage.getItem('authToken') || 'dev-token'
-      const response = await fetch('/api/bots', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api'}/bots`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

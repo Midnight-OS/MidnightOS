@@ -58,12 +58,19 @@ app.post('/api/register', async (req, res) => {
     const token = authService.generateToken(user.id);
     
     res.json({ 
-      success: true, 
-      userId: user.id,
-      token 
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.email.split('@')[0] // Use email prefix as name
+      }
     });
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    if (error.message === 'User with this email already exists') {
+      res.status(409).json({ error: 'Email already registered' });
+    } else {
+      res.status(400).json({ error: error.message });
+    }
   }
 });
 
@@ -78,9 +85,12 @@ app.post('/api/login', async (req, res) => {
     const token = authService.generateToken(user.id);
     
     res.json({ 
-      success: true,
-      userId: user.id,
-      token 
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.email.split('@')[0] // Use email prefix as name
+      }
     });
   } catch (error: any) {
     res.status(401).json({ error: 'Invalid credentials' });
