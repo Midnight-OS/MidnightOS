@@ -182,7 +182,11 @@ export default function CreateBotPage() {
       case 2:
         return true // Features are optional
       case 3:
-        return true // Platforms are completely optional - users can proceed with WebChat, other platforms, or none at all
+        // At least one platform must be configured
+        const hasWebChat = botData.platforms.webChat?.enabled
+        const hasDiscord = botData.platforms.discord?.token && platformTestResults.discord?.success
+        const hasTelegram = botData.platforms.telegram?.token && platformTestResults.telegram?.success
+        return hasWebChat || hasDiscord || hasTelegram
       case 4:
         return true // Review step - always allow proceeding
       default:
@@ -558,9 +562,20 @@ export default function CreateBotPage() {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              💡 Platform configuration is optional. You can use WebChat for web-based interactions,
-              or add Discord/Telegram bots for social platform integration.
+              ⚠️ At least one platform must be configured. Enable WebChat for web-based interactions,
+              or add Discord/Telegram tokens for social platform integration.
             </p>
+            
+            {!canProceed() && step === 3 && (
+              <div className="p-3 mt-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                <p className="text-sm text-yellow-600">
+                  Please configure at least one platform to continue:
+                  • Enable WebChat for direct web interface chat
+                  • Add Discord bot token for Discord integration
+                  • Add Telegram bot token for Telegram integration
+                </p>
+              </div>
+            )}
           </div>
         </Card>
       )}
