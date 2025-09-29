@@ -71,7 +71,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-20 px-6">
+      <section id="pricing" className="py-20 px-6">
         <div className="container max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -114,7 +114,49 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-20 px-6 bg-muted/30">
+      <section id="how-it-works" className="py-20 px-6 bg-muted/30">
+        <div className="container max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              How It Works
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Get started in three simple steps
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary">1</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Create Your Account</h3>
+              <p className="text-muted-foreground">
+                Sign up and get instant access to your isolated environment with Docker containers.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary">2</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Configure Your Bots</h3>
+              <p className="text-muted-foreground">
+                Add your Discord or Telegram tokens and connect to Midnight blockchain with MCP tools.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary">3</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Start Building</h3>
+              <p className="text-muted-foreground">
+                Deploy your bots and start using wallet operations, DAO governance, and marketplace features.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 px-6">
         <div className="container max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Ready to Access Midnight Blockchain?

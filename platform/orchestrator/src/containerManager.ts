@@ -31,8 +31,8 @@ export class ContainerManager {
   private contractDeployer: PlatformContractDeployer;
 
   constructor() {
-    const portStart = parseInt(process.env.PORT_RANGE_START || '4000');
-    const portEnd = parseInt(process.env.PORT_RANGE_END || '5000');
+    const portStart = parseInt(process.env.PORT_RANGE_START || '5001');
+    const portEnd = parseInt(process.env.PORT_RANGE_END || '6000');
     this.portAllocator = new PortAllocator(portStart, portEnd);
     this.contractDeployer = new PlatformContractDeployer(this.baseDir);
   }
@@ -593,10 +593,22 @@ class PortAllocator {
   
   private async isPortAvailable(port: number): Promise<boolean> {
     try {
-      const { stdout } = await execAsync(`lsof -i :${port}`);
-      return stdout.trim() === '';
+      // Try to bind to the port to check if it's available
+      const net = require('net');
+      return new Promise((resolve) => {
+        const server = net.createServer();
+        server.listen(port, () => {
+          server.once('close', () => {
+            resolve(true); // Port is available
+          });
+          server.close();
+        });
+        server.on('error', () => {
+          resolve(false); // Port is not available
+        });
+      });
     } catch {
-      return true; // Port is available
+      return true; // Assume port is available if check fails
     }
   }
 }

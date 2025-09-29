@@ -5,10 +5,25 @@ import { useTheme } from "next-themes"
 import { Moon, Sun, Menu } from "lucide-react"
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { usePathname } from "next/navigation"
 
 export function Header() {
   const { theme, setTheme } = useTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+  const isHomePage = pathname === "/"
+
+  const scrollToSection = (sectionId: string) => {
+    if (!isHomePage) {
+      window.location.href = `/#${sectionId}`
+      return
+    }
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" })
+      setMobileMenuOpen(false)
+    }
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-effect border-b">
@@ -26,12 +41,21 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/features" className="text-sm font-medium hover:text-primary transition-colors">
+            <button 
+              onClick={() => scrollToSection('features')} 
+              className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">
               Features
-            </Link>
-            <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
+            </button>
+            <button 
+              onClick={() => scrollToSection('pricing')} 
+              className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">
               Pricing
-            </Link>
+            </button>
+            <button 
+              onClick={() => scrollToSection('how-it-works')} 
+              className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">
+              How It Works
+            </button>
             <Link href="/docs" className="text-sm font-medium hover:text-primary transition-colors">
               Documentation
             </Link>
@@ -81,12 +105,21 @@ export function Header() {
             className="md:hidden mt-4 pt-4 border-t border-border"
           >
             <div className="flex flex-col gap-4">
-              <Link href="/features" className="text-sm font-medium hover:text-primary transition-colors">
+              <button 
+                onClick={() => scrollToSection('features')} 
+                className="text-sm font-medium hover:text-primary transition-colors text-left">
                 Features
-              </Link>
-              <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
+              </button>
+              <button 
+                onClick={() => scrollToSection('pricing')} 
+                className="text-sm font-medium hover:text-primary transition-colors text-left">
                 Pricing
-              </Link>
+              </button>
+              <button 
+                onClick={() => scrollToSection('how-it-works')} 
+                className="text-sm font-medium hover:text-primary transition-colors text-left">
+                How It Works
+              </button>
               <Link href="/docs" className="text-sm font-medium hover:text-primary transition-colors">
                 Documentation
               </Link>
