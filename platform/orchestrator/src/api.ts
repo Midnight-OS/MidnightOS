@@ -97,6 +97,65 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// ============ Activity/Notification Endpoints ============
+
+/**
+ * Get user activities/notifications
+ */
+app.get('/api/activities', authenticate, async (req, res) => {
+  try {
+    const { limit, offset, unread, botId } = req.query;
+    
+    const activities = await db.getUserActivities(req.user!.id, {
+      limit: limit ? parseInt(limit as string) : 50,
+      offset: offset ? parseInt(offset as string) : 0,
+      unreadOnly: unread === 'true',
+      botId: botId as string
+    });
+    
+    res.json({ activities });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get activity statistics
+ */
+app.get('/api/activities/stats', authenticate, async (req, res) => {
+  try {
+    const stats = await db.getActivityStats(req.user!.id);
+    res.json(stats);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Mark activities as read
+ */
+app.post('/api/activities/read', authenticate, async (req, res) => {
+  try {
+    const { activityIds } = req.body;
+    await db.markActivitiesAsRead(req.user!.id, activityIds);
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get unread count
+ */
+app.get('/api/activities/unread-count', authenticate, async (req, res) => {
+  try {
+    const count = await db.getUnreadActivityCount(req.user!.id);
+    res.json({ count });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============ Protected Endpoints ============
 
 /**

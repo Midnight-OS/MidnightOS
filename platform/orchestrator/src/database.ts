@@ -281,6 +281,124 @@ export class DatabaseService {
   }
 
   /**
+   * Create activity log
+   */
+  async createActivity(data: {
+    userId: string;
+    botId?: string;
+    type: string;
+    title: string;
+    description: string;
+    metadata?: any;
+    severity?: 'info' | 'warning' | 'error' | 'success';
+  }): Promise<any> {
+    return await this.prisma.activity.create({
+      data: {
+        userId: data.userId,
+        botId: data.botId,
+        type: data.type,
+        title: data.title,
+        description: data.description,
+        metadata: data.metadata,
+        severity: data.severity || 'info'
+      }
+    });
+  }
+
+  /**
+   * Get user activities
+   */
+  async getUserActivities(userId: string, options?: {
+    limit?: number;
+    offset?: number;
+    unreadOnly?: boolean;
+    botId?: string;
+  }): Promise<any[]> {
+    const where: any = { userId };
+    
+    if (options?.unreadOnly) {
+      where.read = false;
+    }
+    
+    if (options?.botId) {
+      where.botId = options.botId;
+    }
+
+    return await this.prisma.activity.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: options?.limit || 50,
+      skip: options?.offset || 0,
+      include: {
+        bot: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Mark activities as read
+   */
+  async markActivitiesAsRead(userId: string, activityIds?: string[]): Promise<void> {
+    const where: any = { userId };
+    
+    if (activityIds && activityIds.length > 0) {
+      where.id = { in: activityIds };
+    }
+
+    await this.prisma.activity.updateMany({
+      where,
+      data: { read: true }
+    });
+  }
+
+  /**
+   * Get unread activity count
+   */
+  async getUnreadActivityCount(userId: string): Promise<number> {
+    return await this.prisma.activity.count({
+      where: { 
+        userId, 
+        read: false 
+      }
+    });
+  }
+
+  /**
+   * Get activity statistics
+   */
+  async getActivityStats(userId: string): Promise<any> {
+    const activities = await this.prisma.activity.groupBy({
+      by: ['type', 'severity'],
+      where: { userId },
+      _count: true
+    });
+
+    const recentActivities = await this.getUserActivities(userId, { limit: 10 });
+    const unreadCount = await this.getUnreadActivityCount(userId);
+
+    return {
+      byType: activities.reduce((acc, curr) => {
+        if (!acc[curr.type]) acc[curr.type] = 0;
+        acc[curr.type] += curr._count;
+        return acc;
+      }, {} as Record<string, number>),
+      bySeverity: activities.reduce((acc, curr) => {
+        if (!acc[curr.severity]) acc[curr.severity] = 0;
+        acc[curr.severity] += curr._count;
+        return acc;
+      }, {} as Record<string, number>),
+      recentActivities,
+      unreadCount,
+      totalCount: activities.reduce((sum, curr) => sum + curr._count, 0)
+    };
+  }
+
+  /**
    * Cleanup resources on shutdown
    */
   async disconnect(): Promise<void> {
