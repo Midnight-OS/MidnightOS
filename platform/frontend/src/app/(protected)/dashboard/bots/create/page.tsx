@@ -24,7 +24,6 @@ interface BotFormData {
 export default function CreateBotPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(false)
   const [deploying, setDeploying] = useState(false)
   const [deploymentId, setDeploymentId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -131,7 +130,8 @@ export default function CreateBotPage() {
   }
 
   const handleCreate = async () => {
-    setLoading(true)
+    // Show deployment loader immediately
+    setDeploying(true)
     setError(null)
 
     try {
@@ -162,8 +162,6 @@ export default function CreateBotPage() {
 
       const data = await response.json()
       setDeploymentId(data.bot.id)
-      setDeploying(true)
-      setLoading(false)
       
       // The deployment loader will handle the redirect after completion
       setTimeout(() => {
@@ -171,7 +169,7 @@ export default function CreateBotPage() {
       }, 120000) // 2 minute timeout as fallback
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create bot')
-      setLoading(false)
+      setDeploying(false)
     }
   }
 
@@ -683,20 +681,11 @@ export default function CreateBotPage() {
         ) : (
           <button
             onClick={handleCreate}
-            disabled={loading || !canProceed()}
+            disabled={!canProceed()}
             className="btn-primary flex items-center gap-2 disabled:opacity-50"
           >
-            {loading ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Deploying...
-              </>
-            ) : (
-              <>
-                Deploy Bot
-                <CheckCircle className="w-4 h-4" />
-              </>
-            )}
+            Deploy Bot
+            <CheckCircle className="w-4 h-4" />
           </button>
         )}
       </div>
