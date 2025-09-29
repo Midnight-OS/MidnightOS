@@ -182,9 +182,9 @@ export default function CreateBotPage() {
       case 2:
         return true // Features are optional
       case 3:
-        // Platform configuration is now optional
-        // User can proceed with just WebChat or no platforms at all
-        return true
+        return true // Platforms are completely optional - users can proceed with WebChat, other platforms, or none at all
+      case 4:
+        return true // Review step - always allow proceeding
       default:
         return true
     }
