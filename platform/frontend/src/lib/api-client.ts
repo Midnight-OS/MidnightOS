@@ -12,9 +12,17 @@ interface RegisterData extends LoginCredentials {
 
 interface BotConfig {
   name: string;
-  model: 'openai' | 'anthropic' | 'ollama';
-  platform: 'discord' | 'telegram' | 'direct';
-  config: Record<string, any>;
+  features: {
+    wallet: boolean;
+    dao: boolean;
+    marketplace: boolean;
+  };
+  platforms: {
+    discord?: { token: string };
+    telegram?: { token: string };
+    webChat?: { enabled: boolean };
+  };
+  tier?: 'basic' | 'premium' | 'enterprise';
 }
 
 interface AuthResponse {
@@ -40,9 +48,9 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...options.headers as Record<string, string>,
     };
 
     if (this.token) {

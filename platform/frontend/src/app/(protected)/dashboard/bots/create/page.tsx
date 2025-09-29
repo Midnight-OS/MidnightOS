@@ -50,7 +50,7 @@ export default function CreateBotPage() {
     setTestingPlatform('discord')
     try {
       const token = localStorage.getItem('authToken')
-      const response = await fetch('/api/bots/test/discord', {
+      const response = await fetch('http://localhost:3002/api/bots/test/discord', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -93,7 +93,7 @@ export default function CreateBotPage() {
     setTestingPlatform('telegram')
     try {
       const token = localStorage.getItem('authToken')
-      const response = await fetch('/api/bots/test/telegram', {
+      const response = await fetch('http://localhost:3002/api/bots/test/telegram', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -135,13 +135,18 @@ export default function CreateBotPage() {
         return
       }
 
-      const response = await fetch('/api/bots', {
+      const response = await fetch('http://localhost:3002/api/bots', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(botData)
+        body: JSON.stringify({
+          name: botData.name,
+          features: botData.features,
+          platforms: botData.platforms,
+          tier: botData.type
+        })
       })
 
       if (!response.ok) {

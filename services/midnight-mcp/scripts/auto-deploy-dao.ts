@@ -106,8 +106,16 @@ class AutoDeploymentManager {
       process.env.MN_NODE = 'https://rpc.testnet-02.midnight.network';
     }
     
-    // Initialize deployment service
-    this.deploymentService = new ContractDeploymentService(this.logger);
+    // Initialize deployment service with config
+    const deploymentConfig = {
+      network: this.config.networkId.toLowerCase() as 'testnet' | 'mainnet' | 'local',
+      indexerUrl: process.env.INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
+      indexerWsUrl: process.env.INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
+      nodeUrl: process.env.MN_NODE || 'https://rpc.testnet-02.midnight.network',
+      proofServerUrl: process.env.PROOF_SERVER || 'https://rpc-proof-devnet.midnight.network:8443'
+    };
+    
+    this.deploymentService = new ContractDeploymentService(this.logger, deploymentConfig);
     await this.deploymentService.initialize(seed);
     this.logger.info('Contract deployment service initialized');
   }

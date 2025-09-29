@@ -37,6 +37,12 @@ MidnightOS revolutionizes how DAOs manage their treasuries by integrating artifi
 
 ## Architecture
 
+### System Architecture
+![MidnightOS System Architecture](./docs/images/midnightos-system-architecture.png)
+
+### API Architecture  
+![MidnightOS API Architecture](./docs/images/midnightos-api-architecture.png)
+
 ### System Architecture Diagram
 
 ```mermaid

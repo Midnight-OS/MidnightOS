@@ -124,29 +124,28 @@ export default function OnboardingPage() {
   const createBot = async () => {
     setIsCreating(true)
     try {
-      // Prepare bot configuration based on selected options
-      const config: any = {}
+      // Prepare platforms configuration
+      const platforms: any = {}
       
-      // Add API keys based on model
-      if (selectedModel === "openai" && apiKeys.openaiApiKey) {
-        config.openaiApiKey = apiKeys.openaiApiKey
-      } else if (selectedModel === "anthropic" && apiKeys.anthropicApiKey) {
-        config.anthropicApiKey = apiKeys.anthropicApiKey
-      }
-      
-      // Add platform tokens
+      // Add platform configurations
       if (selectedPlatform === "discord" && apiKeys.discordToken) {
-        config.discordToken = apiKeys.discordToken
+        platforms.discord = { token: apiKeys.discordToken }
       } else if (selectedPlatform === "telegram" && apiKeys.telegramToken) {
-        config.telegramToken = apiKeys.telegramToken
+        platforms.telegram = { token: apiKeys.telegramToken }
+      } else if (selectedPlatform === "direct") {
+        platforms.webChat = { enabled: true }
       }
 
-      // Create the bot via API
+      // Create the bot via API with new structure
       await apiClient.createBot({
         name: botName,
-        model: selectedModel as any,
-        platform: selectedPlatform as any,
-        config
+        features: {
+          wallet: true,
+          dao: true,
+          marketplace: false
+        },
+        platforms,
+        tier: 'basic'
       })
 
       toast.success("Bot created successfully!")

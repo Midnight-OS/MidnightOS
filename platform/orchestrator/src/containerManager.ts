@@ -171,7 +171,11 @@ export class ContainerManager {
     // Set resource limits based on tier
     const limits = this.getResourceLimits(config.tier);
     
+    // Get project root directory
+    const projectRoot = path.resolve(__dirname, '../../..');
+    
     const dockerCompose = template
+      .replace(/{{PROJECT_ROOT}}/g, projectRoot)
       .replace(/{{TENANT_ID}}/g, tenantId)
       .replace(/{{ELIZA_PORT}}/g, elizaPort.toString())
       .replace(/{{CREATED_AT}}/g, new Date().toISOString())
