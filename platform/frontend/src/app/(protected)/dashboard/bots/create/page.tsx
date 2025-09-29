@@ -16,6 +16,7 @@ interface BotFormData {
   platforms: {
     discord?: { token: string; serverId?: string }
     telegram?: { token: string }
+    webChat?: { enabled: boolean }
   }
 }
 
@@ -35,7 +36,9 @@ export default function CreateBotPage() {
       dao: false,
       marketplace: false
     },
-    platforms: {}
+    platforms: {
+      webChat: { enabled: true } // Default to WebChat enabled
+    }
   })
 
   const testDiscordToken = async () => {
@@ -60,10 +63,10 @@ export default function CreateBotPage() {
       })
 
       const data = await response.json()
-      if (response.ok && data.success) {
+      if (response.ok && data.valid) {
         setPlatformTestResults(prev => ({
           ...prev,
-          discord: { success: true, message: `Connected as ${data.botName}` }
+          discord: { success: true, message: `Connected as ${data.username}` }
         }))
       } else {
         setPlatformTestResults(prev => ({
@@ -103,7 +106,7 @@ export default function CreateBotPage() {
       })
 
       const data = await response.json()
-      if (response.ok && data.success) {
+      if (response.ok && data.valid) {
         setPlatformTestResults(prev => ({
           ...prev,
           telegram: { success: true, message: `Connected as @${data.username}` }
@@ -358,6 +361,51 @@ export default function CreateBotPage() {
           </h2>
           
           <div className="space-y-6">
+            {/* WebChat Configuration */}
+            <div className="border border-border rounded-lg p-6">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Web Chat
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Enable embedded chat widget on your website
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Perfect for standalone web-based interactions
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={botData.platforms.webChat?.enabled || false}
+                      onChange={(e) => setBotData({
+                        ...botData,
+                        platforms: {
+                          ...botData.platforms,
+                          webChat: { enabled: e.target.checked }
+                        }
+                      })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+                
+                {botData.platforms.webChat?.enabled && (
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm text-green-600 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      WebChat will be available after deployment
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Discord Configuration */}
             <div className="border border-border rounded-lg p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
@@ -486,8 +534,8 @@ export default function CreateBotPage() {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              ⚠️ Configure at least one platform with your own bot token. 
-              You can get tokens from Discord Developer Portal or BotFather on Telegram.
+              💡 Platform configuration is optional. You can use WebChat for web-based interactions,
+              or add Discord/Telegram bots for social platform integration.
             </p>
           </div>
         </Card>
@@ -534,6 +582,12 @@ export default function CreateBotPage() {
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Platforms</h3>
               <div className="mt-2 space-y-2">
+                {botData.platforms.webChat?.enabled && (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span>WebChat: Enabled</span>
+                  </div>
+                )}
                 {botData.platforms.discord?.token && (
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-600" />
@@ -545,6 +599,9 @@ export default function CreateBotPage() {
                     <CheckCircle className="w-4 h-4 text-green-600" />
                     <span>Telegram: {platformTestResults.telegram?.message || 'Configured'}</span>
                   </div>
+                )}
+                {!botData.platforms.webChat?.enabled && !botData.platforms.discord?.token && !botData.platforms.telegram?.token && (
+                  <p className="text-sm text-muted-foreground">No platforms configured (bot will run without chat interfaces)</p>
                 )}
               </div>
             </div>

@@ -397,6 +397,80 @@ app.post('/api/bots/:botId/stop', authenticate, async (req, res) => {
 });
 
 /**
+ * Test Discord bot token
+ */
+app.post('/api/bots/test/discord', authenticate, async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Discord token is required' });
+    }
+    
+    // Test the Discord token by fetching bot info
+    const response = await fetch('https://discord.com/api/v10/users/@me', {
+      headers: {
+        'Authorization': `Bot ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      return res.json({ valid: false, error: 'Invalid Discord token' });
+    }
+    
+    const botInfo = await response.json();
+    
+    res.json({
+      valid: true,
+      username: botInfo.username,
+      discriminator: botInfo.discriminator,
+      id: botInfo.id,
+      avatar: botInfo.avatar
+    });
+  } catch (error: any) {
+    res.json({ valid: false, error: error.message });
+  }
+});
+
+/**
+ * Test Telegram bot token
+ */
+app.post('/api/bots/test/telegram', authenticate, async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Telegram token is required' });
+    }
+    
+    // Test the Telegram token by fetching bot info
+    const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    
+    if (!response.ok) {
+      return res.json({ valid: false, error: 'Invalid Telegram token' });
+    }
+    
+    const result = await response.json();
+    
+    if (!result.ok) {
+      return res.json({ valid: false, error: 'Invalid Telegram token' });
+    }
+    
+    res.json({
+      valid: true,
+      username: result.result.username,
+      firstName: result.result.first_name,
+      id: result.result.id,
+      canJoinGroups: result.result.can_join_groups,
+      canReadAllGroupMessages: result.result.can_read_all_group_messages
+    });
+  } catch (error: any) {
+    res.json({ valid: false, error: error.message });
+  }
+});
+
+/**
  * Start bot
  */
 app.post('/api/bots/:botId/start', authenticate, async (req, res) => {
