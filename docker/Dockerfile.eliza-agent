@@ -44,13 +44,15 @@ COPY pnpm-workspace.yaml ./
 COPY scripts ./scripts/
 COPY services/eliza-agent/package.json ./services/eliza-agent/
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+# Install ALL dependencies (including devDependencies for TypeScript)
+RUN pnpm install --frozen-lockfile
 
 WORKDIR /app/services/eliza-agent
 
 # Copy built files and configs
 COPY --from=builder /app/services/eliza-agent/dist ./dist
+COPY services/eliza-agent/src ./src
+COPY services/eliza-agent/tsconfig.json ./
 COPY services/eliza-agent/agent-config.json ./
 COPY services/eliza-agent/mcp-config.json ./
 COPY services/eliza-agent/character-example.json ./

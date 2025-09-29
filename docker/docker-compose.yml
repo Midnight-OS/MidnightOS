@@ -127,11 +127,8 @@ services:
     networks:
       - midnightos-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6300/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # Health check disabled - image has no curl/wget/nc
+    # Service is healthy if it's responding on port 6300
 
   # Nginx reverse proxy (optional)
   nginx:
