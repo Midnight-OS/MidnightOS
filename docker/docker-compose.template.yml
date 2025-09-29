@@ -9,7 +9,7 @@ services:
     container_name: eliza-agent-{{TENANT_ID}}
     environment:
       - NODE_ENV=production
-      - PORT={{ELIZA_PORT}}
+      - PORT=3003
       - AGENT_ID={{TENANT_ID}}
       - TENANT_ID={{TENANT_ID}}
       # Connect to shared Midnight MCP service
@@ -27,7 +27,7 @@ services:
       # Logging
       - LOG_LEVEL={{LOG_LEVEL}}
     ports:
-      - "{{ELIZA_PORT}}:{{ELIZA_PORT}}"
+      - "{{ELIZA_PORT}}:3003"
     volumes:
       - ../user-data/{{TENANT_ID}}/storage:/app/.storage
       - ../user-data/{{TENANT_ID}}/logs:/app/logs

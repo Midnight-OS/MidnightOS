@@ -29,9 +29,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install runtime dependencies and pnpm
-RUN apk add --no-cache curl python3 py3-pip
+# Install runtime dependencies, pnpm, and bun
+RUN apk add --no-cache curl python3 py3-pip bash
 RUN npm install -g pnpm@latest
+# Install bun (required for elizaos CLI)
+RUN curl -fsSL https://bun.sh/install | bash && \
+    mv /root/.bun/bin/bun /usr/local/bin/bun && \
+    chmod +x /usr/local/bin/bun
 
 # Copy root package files and lockfile
 COPY package.json ./

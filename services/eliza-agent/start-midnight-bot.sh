@@ -1,36 +1,30 @@
 #!/bin/bash
 
 # Start script for Midnight-enabled Eliza bot
-# This ensures MCP server is running before starting the bot
+# This runs inside the Docker container where the app is already built
 
 echo "Starting Midnight Bot with MCP integration..."
 
-# Check if MCP server is running
-if ! curl -s http://localhost:3456/health > /dev/null 2>&1; then
-    echo "MCP server not running. Starting it now..."
-    cd ../midnight-mcp
-    pnpm start &
-    MCP_PID=$!
-    
-    # Wait for MCP server to be ready
-    echo "Waiting for MCP server to start..."
-    for i in {1..30}; do
-        if curl -s http://localhost:3456/health > /dev/null 2>&1; then
-            echo "MCP server is ready!"
-            break
-        fi
-        sleep 1
-    done
-fi
+# Check if MCP server is accessible (it runs as a separate service)
+MCP_URL=${WALLET_MCP_URL:-http://midnight-mcp:3001}
+echo "Checking MCP server at $MCP_URL..."
+
+for i in {1..30}; do
+    if curl -s ${MCP_URL}/health > /dev/null 2>&1; then
+        echo "✅ MCP server is ready!"
+        break
+    fi
+    echo "Waiting for MCP server... (attempt $i/30)"
+    sleep 2
+done
 
 # Set environment for Midnight bot
 export BOT_TYPE=midnight
 
-# Start the Eliza agent
-cd Eliza-Base-Agent
-pnpm dev
+# The PORT should match what's in docker-compose
+PORT=${PORT:-3003}
+echo "Starting Eliza agent on port $PORT..."
 
-# If we started MCP, stop it on exit
-if [ ! -z "$MCP_PID" ]; then
-    kill $MCP_PID
-fi
+# We're already in /app/services/eliza-agent (WORKDIR from Dockerfile)
+# Start the Eliza agent using npm (elizaos is installed)
+exec npm start

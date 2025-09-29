@@ -206,6 +206,9 @@ export class ContainerManager {
     const dir = path.dirname(dockerComposeFile);
     
     try {
+      // Ensure Docker network exists
+      await this.ensureDockerNetwork();
+      
       // Start containers in detached mode
       await execAsync(`docker compose up -d`, { cwd: dir });
       
@@ -214,6 +217,24 @@ export class ContainerManager {
     } catch (error) {
       console.error(`Failed to start containers for ${tenantId}:`, error);
       throw new Error('Container startup failed');
+    }
+  }
+
+  /**
+   * Ensure the midnightos-network Docker network exists
+   */
+  private async ensureDockerNetwork(): Promise<void> {
+    try {
+      // Check if network exists
+      const { stdout } = await execAsync('docker network ls --format "{{.Name}}"');
+      if (!stdout.includes('midnightos-network')) {
+        console.log('Creating midnightos-network...');
+        await execAsync('docker network create midnightos-network');
+        console.log('✅ Docker network midnightos-network created');
+      }
+    } catch (error) {
+      console.error('Failed to ensure Docker network:', error);
+      // Network might already exist, continue
     }
   }
 
