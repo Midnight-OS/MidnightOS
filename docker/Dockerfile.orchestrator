@@ -67,6 +67,6 @@ ENV USER_DATA_PATH=/app/user-data
 EXPOSE 3002
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD wget --spider --quiet http://localhost:3002/health || exit 1
+  CMD curl -f http://localhost:3002/health || exit 1
 
 CMD ["node", "dist/api.js"]

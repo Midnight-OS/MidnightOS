@@ -31,8 +31,9 @@ export class ContainerManager {
   private contractDeployer: PlatformContractDeployer;
 
   constructor() {
-    const portStart = parseInt(process.env.PORT_RANGE_START || '5001');
-    const portEnd = parseInt(process.env.PORT_RANGE_END || '6000');
+    const portStart = parseInt(process.env.PORT_RANGE_START || '4000');
+    const portEnd = parseInt(process.env.PORT_RANGE_END || '5000');
+    console.log(`ContainerManager initialized with port range: ${portStart}-${portEnd}`);
     this.portAllocator = new PortAllocator(portStart, portEnd);
     this.contractDeployer = new PlatformContractDeployer(this.baseDir);
   }
@@ -432,10 +433,17 @@ export class ContainerManager {
           const data = await fs.readFile(infoFile, 'utf-8');
           const info = JSON.parse(data) as ContainerInfo;
           this.activeContainers.set(info.tenantId, info);
+          
+          // Mark the port as used in the allocator
+          if (info.elizaPort) {
+            this.portAllocator.markPortAsUsed(info.elizaPort);
+          }
         } catch (error) {
           // Skip if no info file
         }
       }
+      
+      console.log(`Loaded ${this.activeContainers.size} active containers`);
     } catch (error) {
       console.error('Failed to load active containers:', error);
     }
@@ -578,37 +586,63 @@ class PortAllocator {
   ) {}
   
   async allocatePort(tenantId: string): Promise<number> {
+    console.log(`Allocating port for ${tenantId}. Used ports: ${this.usedPorts.size}, Range: ${this.startPort}-${this.endPort}`);
+    
     for (let port = this.startPort; port <= this.endPort; port++) {
-      if (!this.usedPorts.has(port) && await this.isPortAvailable(port)) {
-        this.usedPorts.add(port);
-        return port;
+      if (!this.usedPorts.has(port)) {
+        const available = await this.isPortAvailable(port);
+        if (available) {
+          this.usedPorts.add(port);
+          console.log(`Allocated port ${port} for ${tenantId}`);
+          return port;
+        }
       }
     }
+    
+    console.error(`No available ports! Used: ${Array.from(this.usedPorts).join(', ')}`);
     throw new Error('No available ports');
   }
   
   releasePort(port: number): void {
     this.usedPorts.delete(port);
+    console.log(`Released port ${port}. Used ports: ${this.usedPorts.size}`);
+  }
+  
+  markPortAsUsed(port: number): void {
+    this.usedPorts.add(port);
+    console.log(`Marked port ${port} as used. Total used: ${this.usedPorts.size}`);
   }
   
   private async isPortAvailable(port: number): Promise<boolean> {
     try {
-      // Try to bind to the port to check if it's available
-      const net = require('net');
+      // Try to connect to the port - if connection fails, port is available
+      const net = await import('net');
+      
       return new Promise((resolve) => {
         const server = net.createServer();
-        server.listen(port, () => {
-          server.once('close', () => {
-            resolve(true); // Port is available
-          });
+        
+        server.once('error', (err: any) => {
+          if (err.code === 'EADDRINUSE') {
+            // Port is in use
+            resolve(false);
+          } else {
+            // Other error, assume port is available
+            resolve(true);
+          }
+        });
+        
+        server.once('listening', () => {
+          // Port is available, close and return true
           server.close();
+          resolve(true);
         });
-        server.on('error', () => {
-          resolve(false); // Port is not available
-        });
+        
+        server.listen(port, '127.0.0.1');
       });
-    } catch {
-      return true; // Assume port is available if check fails
+    } catch (error) {
+      console.error(`Error checking port ${port}:`, error);
+      // On error, assume port is available to avoid blocking
+      return true;
     }
   }
 }

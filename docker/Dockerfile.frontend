@@ -30,7 +30,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install runtime dependencies and pnpm
-RUN apk add --no-cache wget
+RUN apk add --no-cache curl
 RUN npm install -g pnpm@latest
 
 # Copy root package files  
@@ -62,6 +62,6 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD wget --spider --quiet http://localhost:3000 || exit 1
+  CMD curl -f http://localhost:3000 || exit 1
 
 CMD ["pnpm", "start"]

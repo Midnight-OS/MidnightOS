@@ -29,7 +29,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install runtime dependencies
-RUN apk add --no-cache tini
+RUN apk add --no-cache tini curl
 
 # Install pnpm
 RUN npm install -g pnpm@10.15.0
@@ -53,7 +53,7 @@ ENV CACHE_DIR=/app/cache
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --spider --quiet http://localhost:6300/health || exit 1
+  CMD curl -f http://localhost:6300/health || exit 1
 
 # Expose port
 EXPOSE 6300
