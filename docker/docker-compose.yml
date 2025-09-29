@@ -71,7 +71,7 @@ services:
       - NEXT_PUBLIC_API_URL=http://orchestrator:3002/api
       - NEXT_PUBLIC_MCP_URL=http://midnight-mcp:3001
     ports:
-      - "3003:3000"
+      - "3003:3003"
     depends_on:
       - orchestrator
       - midnight-mcp
@@ -79,7 +79,7 @@ services:
       - midnightos-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3000"]
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3003"]
       interval: 30s
       timeout: 10s
       retries: 3
