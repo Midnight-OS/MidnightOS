@@ -1,7 +1,6 @@
 /* istanbul ignore file */
 
-import { PrismaClient } from '@prisma/client/edge';
-import { withAccelerate } from '@prisma/extension-accelerate';
+import { PrismaClient } from '@prisma/client';
 import { createLogger } from '../../logger/index.js';
 import { TokenInfo } from '../../types/wallet.js';
 
@@ -16,7 +15,7 @@ export class TokenRegistryDatabase {
    * Constructor initializes the Prisma client
    */
   constructor() {
-    this.prisma = new PrismaClient().$extends(withAccelerate()) as any;
+    this.prisma = new PrismaClient();
     this.logger.info('Token registry database initialized successfully');
   }
   

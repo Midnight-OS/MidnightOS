@@ -1,10 +1,9 @@
 import { PrismaClient } from '@prisma/client';
-import { withAccelerate } from '@prisma/extension-accelerate';
 import { v4 as uuidv4 } from 'uuid';
 import { createLogger } from '../../logger/index.js';
 import { TransactionRecord, TransactionState } from '../../types/wallet.js';
 
-const prisma = new PrismaClient().$extends(withAccelerate());
+const prisma = new PrismaClient();
 
 export class PrismaTransactionService {
   private logger = createLogger('transaction-service');

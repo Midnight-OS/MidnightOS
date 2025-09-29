@@ -6,13 +6,10 @@ services:
       dockerfile: docker/Dockerfile.orchestrator
     container_name: midnightos-orchestrator
     env_file:
-      - .env
+      - ../platform/orchestrator/.env
     environment:
       - NODE_ENV=production
       - PORT=3002
-      - DATABASE_URL=${DATABASE_URL:-prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza18ydDdlWUtUQk1XTGRZU3BsdHotcFgiLCJhcGlfa2V5IjoiMDFLNjhHV1JYMkROMEJaM0ZaSDlLVDlaTTAiLCJ0ZW5hbnRfaWQiOiIwZjIzNmUzOGUxYTBhMmFhMmI2MTY5OTMwNTJjOTIzYjU0YzNjNWY5ZmMyMGRjZjhiMDc0YTdjYjlmMDFiZjc3IiwiaW50ZXJuYWxfc2VjcmV0IjoiNGIxZWQ1MTAtY2UxYi00NTgyLWE0N2UtZWYyZmI3NThhNThkIn0.b8Qj5Wq27quYeL1ChEz5xvY5fT1HLgPR3878SYGJ_q4}
-      - DIRECT_URL=${DIRECT_URL:-database_url}
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key-here}
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -35,22 +32,16 @@ services:
       dockerfile: docker/Dockerfile.midnight-mcp
     container_name: midnightos-mcp
     env_file:
-      - .env
+      - ../services/midnight-mcp/.env
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DATABASE_URL=${DATABASE_URL:-prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza18ydDdlWUtUQk1XTGRZU3BsdHotcFgiLCJhcGlfa2V5IjoiMDFLNjhHV1JYMkROMEJaM0ZaSDlLVDlaTTAiLCJ0ZW5hbnRfaWQiOiIwZjIzNmUzOGUxYTBhMmFhMmI2MTY5OTMwNTJjOTIzYjU0YzNjNWY5ZmMyMGRjZjhiMDc0YTdjYjlmMDFiZjc3IiwiaW50ZXJuYWxfc2VjcmV0IjoiNGIxZWQ1MTAtY2UxYi00NTgyLWE0N2UtZWYyZmI3NThhNThkIn0.b8Qj5Wq27quYeL1ChEz5xvY5fT1HLgPR3878SYGJ_q4}
-      - DIRECT_URL=${DIRECT_URL:-database_url}
+      - AGENT_ID=midnightos-mcp-001
+      - MIDNIGHT_SEED=test-seed-for-docker-development-change-in-production
       - WALLET_SERVER_HOST=midnight-mcp
       - WALLET_SERVER_PORT=3001
-      - NETWORK_ID=${NETWORK_ID:-TestNet}
-      - USE_EXTERNAL_PROOF_SERVER=true
-      - PROOF_SERVER=${PROOF_SERVER:-http://proof-server:6300}
-      - INDEXER=${INDEXER:-https://indexer.testnet-02.midnight.network/api/v1/graphql}
-      - INDEXER_WS=${INDEXER_WS:-wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws}
-      - MN_NODE=${MN_NODE:-https://rpc.testnet-02.midnight.network}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
       - STORAGE_BASE_DIR=/app/.storage
+      - PROOF_SERVER=http://proof-server:6300
     ports:
       - "3001:3001"
     volumes:
@@ -74,13 +65,11 @@ services:
       dockerfile: docker/Dockerfile.frontend
     container_name: midnightos-frontend
     env_file:
-      - .env
+      - ../platform/frontend/.env
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=http://orchestrator:3002/api
       - NEXT_PUBLIC_MCP_URL=http://midnight-mcp:3001
-      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL:-https://yuherkwaayoegfjhhjhz.supabase.co}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1aGVya3dhYXlvZWdmamhoamh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwNzA2NzYsImV4cCI6MjA3NDY0NjY3Nn0.YdBnNWNyyPwNN1l0cy7EpR70jvslw_4Mac1ju-Owtcs}
     ports:
       - "3003:3000"
     depends_on:
@@ -102,15 +91,11 @@ services:
       dockerfile: docker/Dockerfile.eliza-agent
     container_name: midnightos-eliza-agent
     env_file:
-      - .env
+      - ../services/eliza-agent/.env
     environment:
       - NODE_ENV=production
       - PORT=3000
       - MCP_SERVER_URL=http://midnight-mcp:3001
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - DATABASE_URL=${DATABASE_URL}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
     ports:
       - "3000:3000"
     depends_on:

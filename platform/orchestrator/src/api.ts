@@ -1368,9 +1368,13 @@ function validateEnvironment(): void {
 
 // Verify platform services are running
 async function verifyPlatformServices(): Promise<void> {
+  // In Docker, use container names; otherwise use localhost
+  const mcpHost = process.env.MCP_HOST || (process.env.NODE_ENV === 'production' ? 'midnight-mcp' : 'localhost');
+  const proofHost = process.env.PROOF_HOST || (process.env.NODE_ENV === 'production' ? 'proof-server' : 'localhost');
+  
   const services = [
-    { name: 'MCP', url: 'http://localhost:3001/health', critical: true },
-    { name: 'Proof Server', url: 'http://localhost:6300/health', critical: false }
+    { name: 'MCP', url: `http://${mcpHost}:3001/health`, critical: true },
+    { name: 'Proof Server', url: `http://${proofHost}:6300/health`, critical: false }
   ];
   
   for (const service of services) {
