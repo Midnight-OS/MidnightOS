@@ -72,3 +72,4 @@ postmaster.pid
 data/
 storage/
 logs/
+.env.docker
