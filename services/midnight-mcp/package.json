@@ -5,6 +5,7 @@
   "scripts": {
     "build": "rm -rf dist && tsc && cp -r src/integrations/marketplace/contract dist/integrations/marketplace/ && cp -r src/integrations/dao/contract dist/integrations/dao/",
     "dev": "pnpm tsx src/server.ts",
+    "start": "node dist/server.js",
     "dist:stdio": "node dist/stdio-server.js",
     "generate-seed": "pnpm tsx scripts/generate-seed.ts",
     "lint": "pnpm eslint src/**/*.ts test/**/*.ts --ext .ts",

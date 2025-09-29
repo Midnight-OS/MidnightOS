@@ -29,6 +29,7 @@
   "dependencies": {
     "@elizaos/cli": "latest",
     "@elizaos/core": "latest",
+    "@elizaos/plugin-anthropic": "^1.0.6",
     "@elizaos/plugin-bootstrap": "latest",
     "@elizaos/plugin-discord": "1.2.5",
     "@elizaos/plugin-mcp": "1.0.7",
