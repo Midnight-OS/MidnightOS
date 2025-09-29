@@ -323,7 +323,7 @@ AGENT_ID=${this.testAgentId}
               for (const [manager, args] of packageManagers) {
           try {
             console.log(`   🔄 Trying: ${manager} ${(args as string[]).join(' ')}`);
-            await this.executeCommand(manager, args as string[], this.elizaProjectPath);
+            await this.executeCommand(manager as string, args as string[], this.elizaProjectPath);
           console.log(`   ✅ Dependencies installed successfully with ${manager}`);
           installSuccess = true;
           break;

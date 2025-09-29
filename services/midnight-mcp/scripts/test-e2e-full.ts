@@ -79,7 +79,7 @@ class FullE2ETestRunner {
 
   private async executeCommand(command: string, args: string[], timeout: number): Promise<string> {
     return new Promise((resolve, reject) => {
-      const process = spawn(command, args, {
+      const childProcess = spawn(command, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         env: {
           ...process.env,
@@ -91,7 +91,7 @@ class FullE2ETestRunner {
       let stdout = '';
       let stderr = '';
 
-      process.stdout.on('data', (data) => {
+      childProcess.stdout.on('data', (data) => {
         stdout += data.toString();
       });
 
@@ -113,10 +113,10 @@ class FullE2ETestRunner {
 
       // Set timeout
       const timeoutId = setTimeout(() => {
-        process.kill('SIGTERM');
+        childProcess.kill('SIGTERM');
         setTimeout(() => {
-          if (!process.killed) {
-            process.kill('SIGKILL');
+          if (!childProcess.killed) {
+            childProcess.kill('SIGKILL');
           }
         }, 5000);
         reject(new Error(`Command timed out after ${timeout}ms`));
@@ -298,7 +298,7 @@ async function main(): Promise<void> {
     runner.printResults();
     runner.generateReport();
     
-    const failedTests = runner.results.filter(r => !r.passed).length;
+    const failedTests = runner['results'].filter(r => !r.passed).length;
     if (failedTests > 0) {
       console.log(`\n❌ ${failedTests} test suites failed`);
       console.log('💡 Check the detailed output above for debugging information');

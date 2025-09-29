@@ -6,6 +6,9 @@
  */
 
 import { ContractDeploymentService } from '../src/integrations/contract-deployment-service.js';
+import { WalletServiceMCP } from '../src/mcp/index.js';
+import { TestnetRemoteConfig } from '../src/wallet/index.js';
+import { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { createLogger } from '../src/logger/index.js';
 import { config } from 'dotenv';
 import * as fs from 'fs/promises';
@@ -29,6 +32,7 @@ interface DeploymentConfig {
 class AutoDeploymentManager {
   private logger = createLogger('auto-deploy');
   private deploymentService?: ContractDeploymentService;
+  private walletService?: WalletServiceMCP;
   private config: DeploymentConfig;
   private envPath: string;
 
@@ -46,8 +50,11 @@ class AutoDeploymentManager {
     // Generate or use provided seed
     const seed = await this.ensureSeed();
     
-    // Initialize deployment service
-    await this.initializeDeploymentService(seed);
+    // Initialize wallet service first
+    await this.initializeWalletService(seed);
+    
+    // Initialize deployment service with wallet provider
+    await this.initializeDeploymentService();
     
     this.logger.info('Deployment manager initialized successfully');
   }
@@ -92,7 +99,55 @@ class AutoDeploymentManager {
     }
   }
 
-  private async initializeDeploymentService(seed: string) {
+  private async initializeWalletService(seed: string) {
+    this.logger.info('Initializing wallet service...');
+    
+    // Determine network ID
+    const networkId = this.config.networkId === 'MainNet' 
+      ? NetworkId.MainNet 
+      : this.config.networkId === 'DevNet' 
+      ? NetworkId.DevNet 
+      : NetworkId.TestNet;
+    
+    // Create wallet config for external proof server
+    const walletConfig = new TestnetRemoteConfig();
+    if (this.config.networkId === 'TestNet') {
+      walletConfig.indexer = 'https://indexer.testnet-02.midnight.network/api/v1/graphql';
+      walletConfig.indexerWS = 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws';
+      walletConfig.node = 'https://rpc.testnet-02.midnight.network';
+      walletConfig.proofServer = 'https://rpc-proof-devnet.midnight.network:8443';
+    }
+    
+    // Create wallet filename
+    const walletFilename = `agent-${this.config.agentId}-wallet`;
+    
+    // Initialize wallet service
+    this.walletService = new WalletServiceMCP(
+      networkId,
+      seed,
+      walletFilename,
+      walletConfig
+    );
+    
+    // Wait for wallet to be ready
+    this.logger.info('Waiting for wallet to sync...');
+    let attempts = 0;
+    while (!this.walletService.isReady() && attempts < 30) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      attempts++;
+      if (attempts % 5 === 0) {
+        this.logger.info(`Wallet sync in progress... (${attempts * 2}s elapsed)`);
+      }
+    }
+    
+    if (!this.walletService.isReady()) {
+      throw new Error('Wallet failed to sync after 60 seconds');
+    }
+    
+    this.logger.info('Wallet service initialized and ready');
+  }
+
+  private async initializeDeploymentService() {
     // Set up environment
     process.env.AGENT_ID = this.config.agentId;
     process.env.NETWORK_ID = this.config.networkId;
@@ -116,7 +171,11 @@ class AutoDeploymentManager {
     };
     
     this.deploymentService = new ContractDeploymentService(this.logger, deploymentConfig);
-    await this.deploymentService.initialize(seed);
+    
+    // Get wallet provider from wallet service
+    const walletProvider = await this.walletService!.getWalletProvider();
+    await this.deploymentService.initialize(walletProvider);
+    
     this.logger.info('Contract deployment service initialized');
   }
 
@@ -128,46 +187,43 @@ class AutoDeploymentManager {
     this.logger.info('Starting automated contract deployment...');
     
     try {
-      // Step 1: Deploy token contracts in parallel
-      this.logger.info('Step 1: Deploying token contracts...');
-      const [fundingToken, voteToken] = await Promise.all([
-        this.deployFundingToken(),
-        this.deployVoteToken()
-      ]);
-
-      this.logger.info(`Funding Token deployed: ${fundingToken}`);
-      this.logger.info(`Vote Token deployed: ${voteToken}`);
-
-      // Step 2: Deploy DAO voting contract
-      this.logger.info('Step 2: Deploying DAO voting contract...');
-      const daoVoting = await this.deployDaoVoting(fundingToken, voteToken);
-      this.logger.info(`DAO Voting contract deployed: ${daoVoting}`);
-
-      // Step 3: Deploy marketplace (optional, independent)
-      this.logger.info('Step 3: Deploying marketplace registry...');
-      const marketplace = await this.deployMarketplace();
-      this.logger.info(`Marketplace deployed: ${marketplace}`);
-
-      // Step 4: Save deployment configuration
+      // Deploy complete DAO with treasury using the public method
+      this.logger.info('Deploying complete DAO treasury system...');
+      
+      const initialFunding = this.config.autoFund && this.config.fundAmount 
+        ? this.config.fundAmount 
+        : undefined;
+      
+      const deployment = await this.deploymentService.deployTreasuryDAO(
+        undefined, // adminPublicKey - let it default
+        initialFunding
+      );
+      
+      this.logger.info(`DAO Voting Contract deployed: ${deployment.daoVotingContract.contractAddress}`);
+      this.logger.info(`Funding Token deployed: ${deployment.fundingTokenContract.contractAddress}`);
+      this.logger.info(`Vote Token deployed: ${deployment.voteTokenContract.contractAddress}`);
+      this.logger.info(`Treasury Address: ${deployment.treasuryAddress}`);
+      
+      // Save deployment configuration
       await this.saveDeploymentConfig({
-        fundingToken,
-        voteToken,
-        daoVoting,
-        marketplace
+        fundingToken: deployment.fundingTokenContract.contractAddress,
+        voteToken: deployment.voteTokenContract.contractAddress,
+        daoVoting: deployment.daoVotingContract.contractAddress,
+        treasuryAddress: deployment.treasuryAddress,
+        deploymentInfo: {
+          daoVoting: deployment.daoVotingContract,
+          fundingToken: deployment.fundingTokenContract,
+          voteToken: deployment.voteTokenContract
+        }
       });
-
-      // Step 5: Optional - Fund the treasury
-      if (this.config.autoFund && this.config.fundAmount) {
-        await this.fundTreasury(daoVoting, this.config.fundAmount);
-      }
-
+      
       this.logger.info('All contracts deployed successfully!');
       
       return {
-        fundingToken,
-        voteToken,
-        daoVoting,
-        marketplace
+        fundingToken: deployment.fundingTokenContract.contractAddress,
+        voteToken: deployment.voteTokenContract.contractAddress,
+        daoVoting: deployment.daoVotingContract.contractAddress,
+        treasuryAddress: deployment.treasuryAddress
       };
     } catch (error) {
       this.logger.error('Contract deployment failed:', error);
@@ -175,38 +231,10 @@ class AutoDeploymentManager {
     }
   }
 
-  private async deployFundingToken(): Promise<string> {
-    const tx = await this.deploymentService!.deployFundingShieldToken({
-      initNonce: BigInt(Date.now())
-    });
-    return tx.contractAddress;
-  }
-
-  private async deployVoteToken(): Promise<string> {
-    const tx = await this.deploymentService!.deployDaoShieldedToken({
-      initNonce: BigInt(Date.now() + 1000)
-    });
-    return tx.contractAddress;
-  }
-
-  private async deployDaoVoting(fundingToken: string, voteToken: string): Promise<string> {
-    const tx = await this.deploymentService!.deployDaoVotingContract({
-      fundingTokenAddress: fundingToken,
-      daoVoteTokenAddress: voteToken
-    });
-    return tx.contractAddress;
-  }
-
-  private async deployMarketplace(): Promise<string> {
-    const tx = await this.deploymentService!.deployMarketplaceRegistry();
-    return tx.contractAddress;
-  }
-
   private async fundTreasury(daoAddress: string, amount: bigint) {
-    this.logger.info(`Funding treasury with ${amount} tokens...`);
-    // This would require having tokens to fund with
-    // Implementation depends on token minting capabilities
-    this.logger.info('Treasury funding not implemented in this version');
+    this.logger.info(`Treasury funding requested for ${amount} tokens`);
+    // Initial funding is handled during deployment if specified
+    this.logger.info('Treasury funding handled during deployment');
   }
 
   private async saveDeploymentConfig(addresses: any) {
@@ -217,7 +245,7 @@ class AutoDeploymentManager {
       `FUNDING_TOKEN_ADDRESS=${addresses.fundingToken}`,
       `DAO_VOTE_TOKEN_ADDRESS=${addresses.voteToken}`,
       `DAO_VOTING_ADDRESS=${addresses.daoVoting}`,
-      `MARKETPLACE_ADDRESS=${addresses.marketplace}`,
+      `TREASURY_ADDRESS=${addresses.treasuryAddress || ''}`,
       `# Deployed on ${new Date().toISOString()} for agent ${this.config.agentId}`
     ];
     
@@ -240,9 +268,8 @@ class AutoDeploymentManager {
   }
 
   async cleanup() {
-    if (this.deploymentService) {
-      await this.deploymentService.cleanup();
-    }
+    // Cleanup is handled automatically by the services
+    this.logger.info('Cleanup complete');
   }
 }
 
@@ -321,7 +348,7 @@ Example:
 ║ Funding Token:  ${contracts.fundingToken.padEnd(50)} ║
 ║ Vote Token:     ${contracts.voteToken.padEnd(50)} ║
 ║ DAO Voting:     ${contracts.daoVoting.padEnd(50)} ║
-║ Marketplace:    ${contracts.marketplace.padEnd(50)} ║
+║ Treasury:       ${(contracts.treasuryAddress || 'N/A').padEnd(50)} ║
 ╚════════════════════════════════════════════════════════════════════╝
 
 ✅ All contracts deployed and configured!

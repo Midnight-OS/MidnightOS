@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import toast from "react-hot-toast"
 import apiClient from "@/lib/api-client"
+import { BotDeploymentLoader } from "@/components/bot-deployment-loader"
 
 const steps = [
   {
@@ -36,6 +37,12 @@ const steps = [
     title: "Choose Platform",
     description: "Select how you want to interact with your bot",
     icon: MessageSquare,
+  },
+  {
+    id: "deploying",
+    title: "Deploying Your Bot",
+    description: "Setting up your bot on the blockchain",
+    icon: Server,
   },
   {
     id: "complete",
@@ -91,6 +98,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [isCreating, setIsCreating] = useState(false)
+  const [deploymentId, setDeploymentId] = useState<string>("")
   
   // Bot configuration
   const [botName, setBotName] = useState("My DAO Bot")
@@ -104,14 +112,13 @@ export default function OnboardingPage() {
   })
 
   const handleNext = async () => {
-    if (currentStep === steps.length - 2) {
-      // Create the bot when reaching the last step
+    if (currentStep === 2) { // After platform selection, start deployment
       await createBot()
-    } else if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1)
-    } else {
+    } else if (currentStep === steps.length - 1) {
       // Complete onboarding
       router.push("/dashboard")
+    } else {
+      setCurrentStep(currentStep + 1)
     }
   }
 
@@ -137,7 +144,7 @@ export default function OnboardingPage() {
       }
 
       // Create the bot via API with new structure
-      await apiClient.createBot({
+      const response = await apiClient.createBot({
         name: botName,
         features: {
           wallet: true,
@@ -148,8 +155,9 @@ export default function OnboardingPage() {
         tier: 'basic'
       })
 
-      toast.success("Bot created successfully!")
-      setCurrentStep(currentStep + 1)
+      // Store deployment ID and move to deployment step
+      setDeploymentId(response.bot?.id || `deploy-${Date.now()}`)
+      setCurrentStep(currentStep + 1) // Move to deploying step
     } catch (error: any) {
       toast.error(error.message || "Failed to create bot")
     } finally {
@@ -322,6 +330,15 @@ export default function OnboardingPage() {
           </div>
         )
 
+      case "deploying":
+        return (
+          <BotDeploymentLoader
+            botName={botName}
+            deploymentId={deploymentId}
+            onComplete={() => setCurrentStep(currentStep + 1)}
+          />
+        )
+
       case "complete":
         return (
           <div className="text-center space-y-6">
@@ -402,40 +419,47 @@ export default function OnboardingPage() {
             {renderStepContent()}
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex items-center justify-between mt-8">
-            <button
-              onClick={handlePrevious}
-              disabled={currentStep === 0}
-              className="btn-ghost px-4 py-2 disabled:opacity-50"
-            >
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Previous
-            </button>
+          {/* Navigation Buttons - hide during deployment */}
+          {steps[currentStep].id !== "deploying" && (
+            <div className="flex items-center justify-between mt-8">
+              <button
+                onClick={handlePrevious}
+                disabled={currentStep === 0}
+                className="btn-ghost px-4 py-2 disabled:opacity-50"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Previous
+              </button>
 
-            <button
-              onClick={handleNext}
-              disabled={isCreating}
-              className="btn-primary px-6 py-2 flex items-center gap-2"
-            >
-              {isCreating ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating Bot...
-                </>
-              ) : currentStep === steps.length - 1 ? (
-                <>
-                  Go to Dashboard
-                  <ChevronRight className="w-4 h-4" />
-                </>
-              ) : (
-                <>
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </div>
+              <button
+                onClick={handleNext}
+                disabled={isCreating}
+                className="btn-primary px-6 py-2 flex items-center gap-2"
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creating Bot...
+                  </>
+                ) : currentStep === steps.length - 1 ? (
+                  <>
+                    Go to Dashboard
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                ) : currentStep === 2 ? (
+                  <>
+                    Deploy Bot
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
