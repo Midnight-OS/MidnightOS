@@ -1,0 +1,67 @@
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies and pnpm
+RUN apk add --no-cache python3 make g++ git
+RUN npm install -g pnpm@latest
+
+# Copy root package files and lockfile
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY platform/frontend/package.json ./platform/frontend/
+
+# Install dependencies from workspace root
+RUN pnpm install --frozen-lockfile
+
+WORKDIR /app/platform/frontend
+
+# Copy source code
+COPY platform/frontend ./
+
+# Build Next.js application
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install runtime dependencies and pnpm
+RUN apk add --no-cache wget
+RUN npm install -g pnpm@latest
+
+# Copy root package files  
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY platform/frontend/package.json ./platform/frontend/
+
+# Install production dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+WORKDIR /app/platform/frontend
+
+# Copy built application from builder
+COPY --from=builder /app/platform/frontend/.next ./.next
+COPY --from=builder /app/platform/frontend/public ./public
+COPY --from=builder /app/platform/frontend/next.config.js ./
+
+# Create user and set permissions
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001 && \
+    chown -R nextjs:nodejs /app
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD wget --spider --quiet http://localhost:3000 || exit 1
+
+CMD ["pnpm", "start"]

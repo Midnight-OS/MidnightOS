@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Eliza AI Agent for user
+  eliza-agent-{{TENANT_ID}}:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile.eliza-agent
+    container_name: eliza-agent-{{TENANT_ID}}
+    environment:
+      - NODE_ENV=production
+      - PORT={{ELIZA_PORT}}
+      - AGENT_ID={{TENANT_ID}}
+      - TENANT_ID={{TENANT_ID}}
+      # Connect to shared Midnight MCP service
+      - WALLET_MCP_URL=http://midnight-mcp:3001
+      # AI Configuration
+      - OPENAI_API_KEY={{OPENAI_API_KEY}}
+      - ANTHROPIC_API_KEY={{ANTHROPIC_API_KEY}}
+      # Social Platform Tokens (if configured)
+      - DISCORD_TOKEN={{DISCORD_TOKEN}}
+      - TELEGRAM_TOKEN={{TELEGRAM_TOKEN}}
+      - TWITTER_API_KEY={{TWITTER_API_KEY}}
+      - TWITTER_API_SECRET={{TWITTER_API_SECRET}}
+      # Database
+      - DATABASE_URL={{DATABASE_URL}}
+      # Logging
+      - LOG_LEVEL={{LOG_LEVEL}}
+    ports:
+      - "{{ELIZA_PORT}}:{{ELIZA_PORT}}"
+    volumes:
+      - ../user-data/{{TENANT_ID}}/storage:/app/.storage
+      - ../user-data/{{TENANT_ID}}/logs:/app/logs
+      - ../user-data/{{TENANT_ID}}/config:/app/config
+    networks:
+      - midnightos-network
+    restart: unless-stopped
+    labels:
+      - "com.midnightos.tenant={{TENANT_ID}}"
+      - "com.midnightos.service=eliza-agent"
+      - "com.midnightos.tier={{TIER}}"
+    deploy:
+      resources:
+        limits:
+          memory: {{MEMORY_LIMIT}}
+          cpus: '{{CPU_LIMIT}}'
+        reservations:
+          memory: {{MEMORY_RESERVATION}}
+          cpus: '{{CPU_RESERVATION}}'
+
+networks:
+  midnightos-network:
+    external: true
+    name: midnightos-network

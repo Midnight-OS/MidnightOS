@@ -1,0 +1,68 @@
+# MidnightOS MCP Service - Builder stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies and pnpm
+RUN apk add --no-cache python3 make g++ git curl ca-certificates
+RUN npm install -g pnpm@latest
+
+# Copy root package files and lockfile
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY services/midnight-mcp/package.json ./services/midnight-mcp/
+
+# Install dependencies from workspace root
+RUN pnpm install --frozen-lockfile
+
+# Copy source
+COPY services/midnight-mcp ./services/midnight-mcp/
+
+# Generate Prisma client
+WORKDIR /app/services/midnight-mcp
+RUN pnpm prisma generate
+
+# Build
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install runtime dependencies and pnpm
+RUN apk add --no-cache wget curl ca-certificates
+RUN npm install -g pnpm@latest
+
+# Copy root package files and lockfile
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY services/midnight-mcp/package.json ./services/midnight-mcp/
+
+# Install production dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+WORKDIR /app/services/midnight-mcp
+
+# Copy from builder
+COPY --from=builder /app/services/midnight-mcp/dist ./dist
+COPY --from=builder /app/services/midnight-mcp/prisma ./prisma
+
+# Create storage directories
+RUN mkdir -p .storage/logs .storage/seeds .storage/wallet-backups .storage/transaction-db && \
+    chown -R node:node /app && \
+    chmod -R 775 .storage
+
+USER node
+
+EXPOSE 3001
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD wget --spider --quiet http://localhost:3001/health || exit 1
+
+CMD ["node", "dist/server.js"]

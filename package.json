@@ -1,0 +1,53 @@
+{
+  "name": "midnightos",
+  "version": "1.0.0",
+  "description": "Multi-user platform for blockchain tools, AI agents, and social bot deployment",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "services/midnight-mcp",
+    "platform/*"
+  ],
+  "scripts": {
+    "install:all": "pnpm install",
+    "build:all": "pnpm run build:orchestrator && pnpm run build:frontend",
+    "build:orchestrator": "cd platform/orchestrator && pnpm run build",
+    "build:frontend": "cd platform/frontend && pnpm run build",
+    "build:mcp": "cd services/midnight-mcp && pnpm run build",
+    "dev": "pnpm run dev:platform",
+    "dev:platform": "concurrently \"cd platform/orchestrator && pnpm run dev\" \"cd services/midnight-mcp && pnpm run dev\" \"cd platform/frontend && pnpm run dev\"",
+    "dev:orchestrator": "cd platform/orchestrator && pnpm run dev",
+    "dev:frontend": "cd platform/frontend && pnpm run dev",
+    "dev:mcp": "cd services/midnight-mcp && pnpm run dev",
+    "start:orchestrator": "cd platform/orchestrator && node dist/api.js",
+    "start:mcp": "cd services/midnight-mcp && node dist/server.js",
+    "setup:local": "./setup.sh setup local",
+    "setup:docker": "./setup.sh setup docker",
+    "start:local": "./setup.sh start local",
+    "start:docker": "./setup.sh start docker",
+    "stop:docker": "./setup.sh stop docker",
+    "docker:build": "docker compose -f docker/docker-compose.yml build",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down",
+    "test": "pnpm run test:orchestrator",
+    "test:orchestrator": "cd platform/orchestrator && pnpm test",
+    "clean": "rm -rf node_modules services/*/node_modules platform/*/node_modules pnpm-lock.yaml",
+    "clean:build": "rm -rf services/*/dist platform/*/dist platform/*/build"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@10.15.0",
+  "main": "test-integration.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

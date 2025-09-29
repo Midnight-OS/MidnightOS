@@ -1,0 +1,101 @@
+{
+  "name": "e2e-agent",
+  "description": "Project starter for elizaOS",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "module": "dist/src/index.js",
+  "types": "dist/index.d.ts",
+  "keywords": [
+    "project",
+    "elizaos"
+  ],
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/src/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@elizaos/cli": "latest",
+    "@elizaos/core": "latest",
+    "@elizaos/plugin-bootstrap": "latest",
+    "@elizaos/plugin-discord": "1.2.5",
+    "@elizaos/plugin-mcp": "1.0.7",
+    "@elizaos/plugin-ollama": "^1.2.1",
+    "@elizaos/plugin-openai": "1.0.7",
+    "@elizaos/plugin-sql": "latest",
+    "@elizaos/plugin-telegram": "^1.0.10",
+    "@elizaos/server": "^1.5.13",
+    "@fleek-platform/eliza-plugin-mcp": "^0.0.8",
+    "@tanstack/react-query": "^5.29.0",
+    "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.6.0",
+    "tailwindcss": "^4.1.10",
+    "whatwg-url": "^12.0.0",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.14.4",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.5.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/uuid": "^11.0.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "axios": "^1.12.2",
+    "jest": "^30.1.3",
+    "prettier": "3.5.3",
+    "ts-jest": "^29.4.4",
+    "tsup": "8.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.6.3",
+    "uuid": "^13.0.0",
+    "vite": "^6.0.1"
+  },
+  "scripts": {
+    "start": "elizaos start",
+    "dev": "elizaos dev",
+    "start:server": "pnpm tsx src/eliza-server.ts",
+    "build": "pnpm tsc --noEmit && pnpm vite build && pnpm tsup",
+    "lint": "pnpm prettier --write ./src",
+    "type-check": "pnpm tsc --noEmit",
+    "type-check:watch": "pnpm tsc --noEmit --watch",
+    "test:component": "pnpm test:install && pnpm jest",
+    "test:e2e": "pnpm test:install && pnpm jest",
+    "test": "pnpm jest",
+    "test:integration": "pnpm jest tests/integration.test.ts --verbose",
+    "test:coverage": "pnpm test:install && pnpm jest --coverage",
+    "test:watch": "pnpm test:install && pnpm jest --watch",
+    "test:install": "pnpm tsx scripts/install-test-deps.js",
+    "format": "pnpm prettier --write ./src",
+    "format:check": "pnpm prettier --check ./src",
+    "check-all": "pnpm type-check && pnpm format:check && pnpm test",
+    "cy:open": "pnpm test:install && pnpm cypress open",
+    "cy:run": "pnpm test:install && pnpm cypress run --component",
+    "cy:test": "pnpm test:install && pnpm cypress run --component --reporter spec",
+    "cypress:component": "pnpm test:install && pnpm cypress run --component",
+    "cypress:e2e": "pnpm test:install && pnpm cypress run --e2e",
+    "cypress:open": "pnpm test:install && pnpm cypress open"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "gitHead": "b165ad83e5f7a21bc1edbd83374ca087e3cd6b33"
+}

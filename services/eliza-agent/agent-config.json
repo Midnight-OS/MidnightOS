@@ -1,0 +1,58 @@
+{
+  "name": "MidnightOS Bot",
+  "description": "AI-powered bot for crypto wallet management and DAO operations",
+  "character": {
+    "personality": "helpful, knowledgeable about crypto, professional",
+    "style": "concise and clear",
+    "topics": ["blockchain", "wallets", "DAOs", "trading", "DeFi"]
+  },
+  "providers": {
+    "mcp": {
+      "enabled": true,
+      "servers": {
+        "midnight-wallet": {
+          "url": "http://localhost:3000",
+          "tools": [
+            "walletStatus",
+            "getBalance", 
+            "send",
+            "getTransactionHistory",
+            "openDaoElection",
+            "castDaoVote",
+            "getDaoState",
+            "fundDaoTreasury"
+          ]
+        }
+      }
+    }
+  },
+  "platforms": {
+    "discord": {
+      "enabled": true,
+      "token": "{{DISCORD_TOKEN}}",
+      "serverId": "{{DISCORD_SERVER_ID}}",
+      "commands": {
+        "/wallet": "Check wallet status and balance",
+        "/send": "Send funds to another address",
+        "/dao": "View DAO information",
+        "/vote": "Cast vote in DAO election"
+      }
+    },
+    "telegram": {
+      "enabled": true,
+      "token": "{{TELEGRAM_TOKEN}}",
+      "commands": {
+        "/start": "Initialize the bot",
+        "/wallet": "Check wallet status",
+        "/balance": "Get wallet balance",
+        "/help": "Show available commands"
+      }
+    }
+  },
+  "features": {
+    "wallet": true,
+    "dao": true,
+    "marketplace": false,
+    "trading": false
+  }
+}

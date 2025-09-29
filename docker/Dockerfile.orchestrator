@@ -1,0 +1,70 @@
+# MidnightOS Orchestrator Service
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies and pnpm
+RUN apk add --no-cache python3 make g++ git curl ca-certificates
+RUN npm install -g pnpm@latest
+
+# Copy root package files and lockfile
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY platform/orchestrator/package.json ./platform/orchestrator/
+
+# Install dependencies from workspace root
+RUN pnpm install --frozen-lockfile
+
+# Copy source
+COPY platform/orchestrator/prisma ./platform/orchestrator/prisma
+COPY platform/orchestrator/tsconfig.json ./platform/orchestrator/
+COPY platform/orchestrator/src ./platform/orchestrator/src
+
+# Generate Prisma client
+WORKDIR /app/platform/orchestrator
+RUN pnpm prisma generate
+
+# Build
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install docker CLI, runtime dependencies and pnpm
+RUN apk add --no-cache docker-cli wget curl ca-certificates
+RUN npm install -g pnpm@latest
+
+# Copy root package files and lockfile
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY platform/orchestrator/package.json ./platform/orchestrator/
+
+# Install production dependencies  
+RUN pnpm install --frozen-lockfile --prod
+
+WORKDIR /app/platform/orchestrator
+
+# Copy from builder
+COPY --from=builder /app/platform/orchestrator/dist ./dist
+COPY --from=builder /app/platform/orchestrator/prisma ./prisma
+
+# Create directories
+RUN mkdir -p /app/user-data && \
+    chown -R node:node /app
+
+USER node
+
+ENV NODE_ENV=production
+ENV PORT=3002
+ENV USER_DATA_PATH=/app/user-data
+
+EXPOSE 3002
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD wget --spider --quiet http://localhost:3002/health || exit 1
+
+CMD ["node", "dist/api.js"]

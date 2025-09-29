@@ -1,0 +1,102 @@
+[
+  {
+    "endpoint": "/health",
+    "status": "PASS",
+    "data": {
+      "status": "ok"
+    }
+  },
+  {
+    "endpoint": "/wallet/status",
+    "status": "PASS",
+    "data": {
+      "ready": true,
+      "syncing": false,
+      "syncProgress": {
+        "synced": false,
+        "lag": {
+          "applyGap": "0",
+          "sourceGap": "0"
+        },
+        "percentage": 0
+      },
+      "address": "mn_shield-addr_test1l4cwlsz35s4p085kt7h9p0vjdpkp7jsuu90h34vh07kv9uhy237sxq9r7qtwhke8dxmfxhj2u65lmudkl7atterwh7ceqqlklrvmedztzgmp82ry",
+      "balances": {
+        "balance": "0",
+        "pendingBalance": "0"
+      },
+      "recovering": false,
+      "recoveryAttempts": 0,
+      "maxRecoveryAttempts": 5,
+      "isFullySynced": false
+    }
+  },
+  {
+    "endpoint": "/wallet/address",
+    "status": "PASS",
+    "data": {
+      "address": "mn_shield-addr_test1l4cwlsz35s4p085kt7h9p0vjdpkp7jsuu90h34vh07kv9uhy237sxq9r7qtwhke8dxmfxhj2u65lmudkl7atterwh7ceqqlklrvmedztzgmp82ry"
+    }
+  },
+  {
+    "endpoint": "/wallet/balance",
+    "status": "PASS",
+    "data": {
+      "balance": "0",
+      "pendingBalance": "0"
+    }
+  },
+  {
+    "endpoint": "/treasury/balance",
+    "status": "PASS",
+    "data": {
+      "success": true,
+      "balance": {
+        "total": "0",
+        "totalFunded": "0",
+        "totalPaidOut": "0",
+        "pendingProposals": 0,
+        "approvedProposals": 0
+      },
+      "electionStatus": {
+        "open": false,
+        "electionId": null,
+        "votes": null
+      },
+      "message": "DAO not configured - returning default values"
+    }
+  },
+  {
+    "endpoint": "/treasury/proposals",
+    "status": "PASS",
+    "data": {
+      "success": true,
+      "count": 0,
+      "proposals": []
+    }
+  },
+  {
+    "endpoint": "/dao/state",
+    "status": "PASS",
+    "data": {
+      "success": false,
+      "error": "DAO configuration not found. Please set DAO environment variable."
+    }
+  },
+  {
+    "endpoint": "/wallet/tokens/list",
+    "status": "PASS",
+    "data": {
+      "tokens": [
+        {
+          "tokenName": "NATIVE",
+          "symbol": "MN",
+          "balance": "0",
+          "contractAddress": "02000000000000000000000000000000000000000000000000000000000000000000",
+          "description": "Native Midnight token",
+          "decimals": 6
+        }
+      ]
+    }
+  }
+]

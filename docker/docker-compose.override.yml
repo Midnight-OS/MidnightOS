@@ -1,0 +1,14 @@
+# Local development override - uses host directories instead of built images
+# This allows running services locally while Docker builds are happening
+
+services:
+  # Run proof server as the only required Docker service
+  proof-server:
+    ports:
+      - "6300:6300"
+  
+  # Other services can be run locally with:
+  # - cd services/midnight-mcp && bun run dev
+  # - cd platform/orchestrator && bun run dev  
+  # - cd platform/frontend && bun run dev
+  # - cd services/eliza-agent && bun run dev

@@ -1,0 +1,74 @@
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies and pnpm
+RUN apk add --no-cache python3 make g++ git
+RUN npm install -g pnpm@latest
+
+# Copy root package files and lockfile
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY services/eliza-agent/package.json ./services/eliza-agent/
+
+# Install dependencies from workspace root
+RUN pnpm install --frozen-lockfile
+
+WORKDIR /app/services/eliza-agent
+
+# Copy source code
+COPY services/eliza-agent ./
+
+# Build the application
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install runtime dependencies and pnpm
+RUN apk add --no-cache curl python3 py3-pip
+RUN npm install -g pnpm@latest
+
+# Copy root package files and lockfile
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY services/eliza-agent/package.json ./services/eliza-agent/
+
+# Install production dependencies only
+RUN pnpm install --frozen-lockfile --prod
+
+WORKDIR /app/services/eliza-agent
+
+# Copy built files and configs
+COPY --from=builder /app/services/eliza-agent/dist ./dist
+COPY services/eliza-agent/agent-config.json ./
+COPY services/eliza-agent/mcp-config.json ./
+COPY services/eliza-agent/character-example.json ./
+COPY services/eliza-agent/start-midnight-bot.sh ./
+
+# Make start script executable
+RUN chmod +x start-midnight-bot.sh
+
+# Create directories
+RUN mkdir -p .storage config logs && \
+    chown -R node:node /app
+
+USER node
+
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=3003
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=5 \
+  CMD curl -f http://localhost:3003/health || exit 1
+
+EXPOSE 3003
+
+# Start the bot
+CMD ["sh", "./start-midnight-bot.sh"]

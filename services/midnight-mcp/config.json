@@ -1,0 +1,20 @@
+{
+  "name": "midnight-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Midnight blockchain operations",
+  "server": {
+    "host": "0.0.0.0",
+    "port": 3001
+  },
+  "midnight": {
+    "network": "devnet",
+    "rpcUrl": "https://rpc.midnightlabs.io"
+  },
+  "storage": {
+    "path": "/app/.storage",
+    "seeds": "/app/.storage/seeds",
+    "logs": "/app/.storage/logs",
+    "walletBackups": "/app/.storage/wallet-backups",
+    "transactionDb": "/app/.storage/transaction-db"
+  }
+}

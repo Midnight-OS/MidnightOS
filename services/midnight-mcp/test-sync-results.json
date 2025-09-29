@@ -1,0 +1,82 @@
+{
+  "timestamp": "2025-09-28T04:05:04.047Z",
+  "seed": "5913a4c03dc0c697...",
+  "seedLength": 64,
+  "walletAddress": "mn_shield-addr_test130u7emvyyrj5w5krfagveze5nvh60s4x2g5cg98896nzzyfzlnkqxqygaya00cvxqg5l77wlu4r4pxkwye0en8sz70kk3ha7s3tcn38tsckllm0w",
+  "syncTime": 5,
+  "tests": [
+    {
+      "endpoint": "/health",
+      "status": "PASS",
+      "data": {
+        "status": "ok"
+      }
+    },
+    {
+      "endpoint": "/wallet/status",
+      "status": "PASS",
+      "data": {
+        "ready": false,
+        "syncing": false,
+        "syncProgress": {
+          "synced": false,
+          "lag": {
+            "applyGap": "0",
+            "sourceGap": "0"
+          },
+          "percentage": 0
+        },
+        "address": "mn_shield-addr_test130u7emvyyrj5w5krfagveze5nvh60s4x2g5cg98896nzzyfzlnkqxqygaya00cvxqg5l77wlu4r4pxkwye0en8sz70kk3ha7s3tcn38tsckllm0w",
+        "balances": {
+          "balance": "0",
+          "pendingBalance": "0"
+        },
+        "recovering": false,
+        "recoveryAttempts": 0,
+        "maxRecoveryAttempts": 5,
+        "isFullySynced": false
+      }
+    },
+    {
+      "endpoint": "/wallet/address",
+      "status": "FAIL",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/wallet/balance",
+      "status": "FAIL",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/treasury/balance",
+      "status": "FAIL",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/treasury/proposals",
+      "status": "FAIL",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/dao/state",
+      "status": "FAIL",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/wallet/tokens/list",
+      "status": "PASS",
+      "data": {
+        "tokens": [
+          {
+            "tokenName": "NATIVE",
+            "symbol": "MN",
+            "balance": "0",
+            "contractAddress": "02000000000000000000000000000000000000000000000000000000000000000000",
+            "description": "Native Midnight token",
+            "decimals": 6
+          }
+        ]
+      }
+    }
+  ]
+}

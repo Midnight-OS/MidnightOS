@@ -1,0 +1,24 @@
+[
+  {
+    "endpoint": "wallet-service/health",
+    "status": "PASS",
+    "data": {
+      "status": "ok"
+    }
+  },
+  {
+    "endpoint": "eliza/health",
+    "status": "FAIL",
+    "error": "Error"
+  },
+  {
+    "endpoint": "eliza/status",
+    "status": "FAIL",
+    "error": "Error"
+  },
+  {
+    "endpoint": "eliza/mcp/status",
+    "status": "FAIL",
+    "error": "Error"
+  }
+]

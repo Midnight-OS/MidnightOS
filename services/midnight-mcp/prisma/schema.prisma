@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Token {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  symbol           String
+  contractAddress  String
+  domainSeparator  String
+  tokenTypeHex     String?
+  description      String?
+  decimals         Int      @default(6)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@index([name])
+  @@index([symbol])
+  @@index([contractAddress])
+  @@index([tokenTypeHex])
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  state         String   // INITIATED, SENT, COMPLETED, FAILED
+  fromAddress   String
+  toAddress     String
+  amount        String
+  txIdentifier  String?  @unique
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([state])
+  @@index([txIdentifier])
+  @@index([fromAddress])
+  @@index([toAddress])
+}
