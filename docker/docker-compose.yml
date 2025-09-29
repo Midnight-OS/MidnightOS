@@ -5,6 +5,8 @@ services:
       context: ../
       dockerfile: docker/Dockerfile.orchestrator
     container_name: midnightos-orchestrator
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - PORT=3002
@@ -31,6 +33,8 @@ services:
       context: ../
       dockerfile: docker/Dockerfile.midnight-mcp
     container_name: midnightos-mcp
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - PORT=3001
@@ -67,6 +71,8 @@ services:
       context: ../
       dockerfile: docker/Dockerfile.frontend
     container_name: midnightos-frontend
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=http://orchestrator:3002/api
@@ -93,6 +99,8 @@ services:
       context: ../
       dockerfile: docker/Dockerfile.eliza-agent
     container_name: midnightos-eliza-agent
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - PORT=3000

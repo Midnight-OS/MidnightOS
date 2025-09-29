@@ -39,6 +39,7 @@ RUN npm install -g pnpm@latest
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
+COPY scripts ./scripts/
 COPY services/midnight-mcp/package.json ./services/midnight-mcp/
 
 # Install production dependencies

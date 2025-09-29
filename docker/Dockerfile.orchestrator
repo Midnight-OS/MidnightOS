@@ -41,6 +41,7 @@ RUN npm install -g pnpm@latest
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
+COPY scripts ./scripts/
 COPY platform/orchestrator/package.json ./platform/orchestrator/
 
 # Install production dependencies  

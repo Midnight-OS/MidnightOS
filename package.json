@@ -32,7 +32,11 @@
     "test": "pnpm run test:orchestrator",
     "test:orchestrator": "cd platform/orchestrator && pnpm test",
     "clean": "rm -rf node_modules services/*/node_modules platform/*/node_modules pnpm-lock.yaml",
-    "clean:build": "rm -rf services/*/dist platform/*/dist platform/*/build"
+    "clean:build": "rm -rf services/*/dist platform/*/dist platform/*/build",
+    "env:sync": "node scripts/sync-env.js",
+    "env:check": "node scripts/sync-env.js --check",
+    "env:validate": "node scripts/sync-env.js --validate",
+    "env:sync:verbose": "node scripts/sync-env.js --verbose"
   },
   "dependencies": {
     "concurrently": "^8.2.2"
