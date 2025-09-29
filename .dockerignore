@@ -29,8 +29,14 @@
 **/.pnpm-debug.log*
 
 # Local env files
-**/.env
-**/.env*.local
+#**/.env
+#**/.env*.local
+
+# Allow deployment .env files
+# !platform/orchestrator/.env
+# !platform/frontend/.env
+# !services/midnight-mcp/.env
+# !services/eliza-agent/.env
 
 # IDE
 **/.vscode

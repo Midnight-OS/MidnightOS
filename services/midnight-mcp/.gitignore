@@ -1,4 +1,4 @@
-.env
+# .env
 .turbo
 *.log
 *.tsbuildinfo
@@ -63,9 +63,9 @@ dist/
 build/
 
 # Environment variables
-.env
-.env.local
-.env.*.local
+# .env
+# .env.local
+# .env.*.local
 
 # IDE files
 .idea/

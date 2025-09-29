@@ -29,6 +29,7 @@
     "docker:up": "docker compose -f docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f docker/docker-compose.yml down",
     "docker:build": "./scripts/docker-build.sh",
+    "docker:build:deploy": "./scripts/docker-build-deploy.sh",
     "docker:start": "./scripts/docker-start.sh",
     "docker:stop": "./scripts/docker-down.sh",
     "docker:deploy": "./scripts/docker-deploy.sh",
