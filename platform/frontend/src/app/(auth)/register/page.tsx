@@ -50,8 +50,8 @@ export default function RegisterPage() {
       const response = await apiClient.register({ name, email, password })
       toast.success("Account created successfully!")
       router.push("/onboarding")
-    } catch (error) {
-      toast.error("Registration failed")
+    } catch (error: any) {
+      toast.error(error.message || "Registration failed")
     } finally {
       setIsLoading(false)
     }

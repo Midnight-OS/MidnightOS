@@ -76,22 +76,26 @@ class ApiClient {
     }
   }
 
-  // Auth endpoints
+  // Auth endpoints - Fixed to match orchestrator API
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/auth/login', {
+    const response = await this.request<AuthResponse>('/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
-    this.setToken(response.token);
+    if (response.token) {
+      this.setToken(response.token);
+    }
     return response;
   }
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/auth/register', {
+    const response = await this.request<AuthResponse>('/register', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    this.setToken(response.token);
+    if (response.token) {
+      this.setToken(response.token);
+    }
     return response;
   }
 
@@ -106,7 +110,7 @@ class ApiClient {
 
   // Bot management
   async getBots() {
-    return this.request('/bots');
+    return this.request<{ bots: any[] }>('/bots');
   }
 
   async createBot(bot: BotConfig) {
@@ -145,16 +149,37 @@ class ApiClient {
     });
   }
 
-  // Chat
-  async sendMessage(botId: string, message: string, sessionId?: string) {
-    return this.request('/chat', {
+  async pauseBot(id: string) {
+    return this.request(`/bots/${id}/pause`, {
       method: 'POST',
-      body: JSON.stringify({ botId, message, sessionId }),
     });
   }
 
-  async getChatHistory(sessionId: string) {
-    return this.request(`/chat/${sessionId}`);
+  async resumeBot(id: string) {
+    return this.request(`/bots/${id}/resume`, {
+      method: 'POST',
+    });
+  }
+
+  async getBotStatus(id: string) {
+    return this.request(`/bots/${id}/status`);
+  }
+
+  async getBotLogs(id: string) {
+    return this.request(`/bots/${id}/logs`);
+  }
+
+  // Chat
+  async sendMessage(botId: string, message: string, sessionId?: string) {
+    return this.request(`/bots/${botId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ message, sessionId }),
+    });
+  }
+
+  async getChatHistory(botId: string, sessionId?: string) {
+    const params = sessionId ? `?sessionId=${sessionId}` : '';
+    return this.request(`/bots/${botId}/chat/history${params}`);
   }
 
   // WebSocket for real-time updates
