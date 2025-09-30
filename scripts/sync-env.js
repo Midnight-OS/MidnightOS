@@ -149,6 +149,8 @@ const SERVICE_ENV_MAPPING = {
     defaults: {
       PORT: '3002',
       NODE_ENV: 'development',
+      SHARED_ELIZA_URL: 'http://localhost:3004',
+      WALLET_MCP_URL: 'http://localhost:3001',
     },
     transform: (rootEnv) => ({
       // Use DATABASE_URL (PostgreSQL) if provided, otherwise fallback to SQLite
@@ -164,7 +166,10 @@ const SERVICE_ENV_MAPPING = {
       SUPABASE_SERVICE_ROLE_KEY: rootEnv.SUPABASE_SERVICE_ROLE_KEY || '',
       JWT_SECRET: rootEnv.JWT_SECRET || 'change-this-in-production',
       NODE_ENV: rootEnv.NODE_ENV || 'development',
-      PORT: rootEnv.PORT || '3002',
+      PORT: rootEnv.ORCHESTRATOR_PORT || rootEnv.PORT || '3002',
+      SHARED_ELIZA_URL: rootEnv.SHARED_ELIZA_URL || 'http://localhost:3004',
+      WALLET_MCP_URL: rootEnv.WALLET_MCP_URL || 'http://localhost:3001',
+      MCP_PORT: rootEnv.MCP_PORT || '3001',
       OPENAI_API_KEY: rootEnv.OPENAI_API_KEY || '',
       ANTHROPIC_API_KEY: rootEnv.ANTHROPIC_API_KEY || '',
       ADMIN_SEED: rootEnv.ADMIN_SEED || '',
@@ -208,11 +213,13 @@ const SERVICE_ENV_MAPPING = {
       MODEL_TYPE: 'openai',
       LOG_LEVEL: 'info',
       PGLITE_DATA_DIR: '.eliza/.elizadb',
+      PORT: '3004',
     },
     transform: (rootEnv) => ({
       AGENT_ID: rootEnv.AGENT_ID || 'midnight-bot-agent-local',
       WALLET_MCP_URL: rootEnv.WALLET_MCP_URL || 'http://localhost:3001',
       MODEL_TYPE: rootEnv.MODEL_TYPE || 'openai',
+      PORT: rootEnv.SHARED_ELIZA_PORT || '3004',
       OPENAI_API_KEY: rootEnv.OPENAI_API_KEY,
       ANTHROPIC_API_KEY: rootEnv.ANTHROPIC_API_KEY || '',
       DATABASE_URL: rootEnv.DATABASE_URL || '',
