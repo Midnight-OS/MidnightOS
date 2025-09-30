@@ -1,8 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Enable standalone output for Docker (creates minimal server bundle)
+  output: 'standalone',
   images: {
     domains: ['midnightos.ai', 'localhost'],
+    // Allow all image formats
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+    ],
   },
   // Disable TypeScript and ESLint errors during build
   typescript: {

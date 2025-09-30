@@ -65,6 +65,8 @@ services:
       - ../platform/frontend/.env
     environment:
       - NODE_ENV=production
+      - PORT=3003
+      - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_API_URL=http://orchestrator:3002/api
       - NEXT_PUBLIC_MCP_URL=http://midnight-mcp:3001
     ports:
@@ -75,6 +77,12 @@ services:
     networks:
       - midnightos-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
 
   # ElizaOS Agent (Default instance)
   eliza-agent:
