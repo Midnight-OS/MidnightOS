@@ -1,5 +1,11 @@
 import { type Character } from '@elizaos/core';
 
+// DEBUG: Log OpenAI key on character load
+console.log("🔑 DEBUG: Character loading - OpenAI Key:", 
+  process.env.OPENAI_API_KEY ? 
+  `${process.env.OPENAI_API_KEY.substring(0, 20)}...${process.env.OPENAI_API_KEY.slice(-6)}` : 
+  "NOT SET");
+
 /**
  * MidnightOS Bot Character - Specialized for blockchain and DAO operations
  * This character manages crypto wallets, DAO treasury, and blockchain interactions
@@ -43,17 +49,27 @@ export const character: Character = {
       midnightIndexerUrl: process.env.MIDNIGHT_INDEXER_URL || 'wss://indexer.testnet-02.midnight.network:443',
       midnightNodeUrl: process.env.MIDNIGHT_NODE_URL || 'https://rpc.testnet-02.midnight.network',
     },
-    // MCP server configuration for Midnight blockchain
-    mcp: {
-      servers: {
-        "midnight-mcp": {
-          type: "stdio",
-          name: "Midnight MCP",
-          command: "node",
-          args: ["../midnight-mcp/dist/stdio-server.js"]
-        }
+  // MCP server configuration for Midnight blockchain
+  // In Docker: Use HTTP connection to shared MCP service
+  // Locally: Use stdio subprocess (faster, direct)
+  mcp: process.env.NODE_ENV === 'production' ? {
+    servers: {
+      "midnight-mcp": {
+        type: "http",
+        name: "Midnight MCP",
+        url: process.env.WALLET_MCP_URL || "http://host.docker.internal:3001"
       }
-    },
+    }
+  } : {
+    servers: {
+      "midnight-mcp": {
+        type: "stdio",
+        name: "Midnight MCP",
+        command: "node",
+        args: ["../midnight-mcp/dist/stdio-server.js"]
+      }
+    }
+  },
     avatar: 'https://midnightos.ai/bot-avatar.png',
     
     // Bot capabilities based on tier

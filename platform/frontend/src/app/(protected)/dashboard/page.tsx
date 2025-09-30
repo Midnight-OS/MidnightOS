@@ -39,10 +39,10 @@ export default function DashboardPage() {
 
   const fetchBots = async () => {
     try {
-      const token = localStorage.getItem('authToken') || 'dev-token'
+      const token = localStorage.getItem('auth_token') || 'dev-token'
       // For development - set a token if none exists
-      if (!localStorage.getItem('authToken')) {
-        localStorage.setItem('authToken', 'dev-token')
+      if (!localStorage.getItem('auth_token')) {
+        localStorage.setItem('auth_token', 'dev-token')
       }
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api'}/bots`, {

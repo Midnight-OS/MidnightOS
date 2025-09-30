@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import apiClient from '@/lib/api-client';
 
 interface Message {
   id: string;
@@ -46,23 +47,14 @@ export function ChatInterface({ botId, botName, onSendMessage }: ChatInterfacePr
 
   const loadChatHistory = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`/api/bots/${botId}/chat/history`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.history) {
-          setMessages(data.history.map((msg: any) => ({
-            id: msg.id || crypto.randomUUID(),
-            role: msg.role,
-            content: msg.content,
-            timestamp: new Date(msg.timestamp),
-          })));
-        }
+      const data = await apiClient.getChatHistory(botId, sessionId) as { history: Message[] };
+      if (data.history) {
+        setMessages(data.history.map((msg: any) => ({
+          id: msg.id || crypto.randomUUID(),
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.timestamp),
+        })));
       }
     } catch (error) {
       console.error('Failed to load chat history:', error);
@@ -79,30 +71,13 @@ export function ChatInterface({ botId, botName, onSendMessage }: ChatInterfacePr
       timestamp: new Date(),
     };
 
+    const messageText = input; // Store input before clearing it
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`/api/bots/${botId}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          message: input,
-          sessionId,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to send message');
-      }
-
-      const data = await response.json();
+      const data = await apiClient.sendMessage(botId, messageText, sessionId) as { response: string; timestamp: string };
       
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
@@ -115,7 +90,7 @@ export function ChatInterface({ botId, botName, onSendMessage }: ChatInterfacePr
 
       // Call optional callback
       if (onSendMessage) {
-        onSendMessage(input);
+        onSendMessage(messageText);
       }
     } catch (error: any) {
       toast({

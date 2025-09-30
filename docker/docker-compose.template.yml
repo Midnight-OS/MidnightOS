@@ -1,19 +1,21 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+# This is a template file - placeholders like {{TENANT_ID}} are replaced at runtime
 version: '3.8'
 
 services:
   # Eliza AI Agent for user
   eliza-agent-{{TENANT_ID}}:
     build:
-      context: {{PROJECT_ROOT}}
-      dockerfile: {{PROJECT_ROOT}}/docker/Dockerfile.eliza-agent
+      context: "{{PROJECT_ROOT}}"
+      dockerfile: "{{PROJECT_ROOT}}/docker/Dockerfile.eliza-agent"
     container_name: eliza-agent-{{TENANT_ID}}
     environment:
       - NODE_ENV=production
-      - PORT=3003
+      - PORT=3000
       - AGENT_ID={{TENANT_ID}}
       - TENANT_ID={{TENANT_ID}}
-      # Connect to shared Midnight MCP service
-      - WALLET_MCP_URL=http://midnight-mcp:3001
+      # Connect to shared Midnight MCP service (running on host)
+      - WALLET_MCP_URL=http://host.docker.internal:3001
       # AI Configuration
       - OPENAI_API_KEY={{OPENAI_API_KEY}}
       - ANTHROPIC_API_KEY={{ANTHROPIC_API_KEY}}
@@ -27,7 +29,7 @@ services:
       # Logging
       - LOG_LEVEL={{LOG_LEVEL}}
     ports:
-      - "{{ELIZA_PORT}}:3003"
+      - "{{ELIZA_PORT}}:3000"
     volumes:
       - ../user-data/{{TENANT_ID}}/storage:/app/.storage
       - ../user-data/{{TENANT_ID}}/logs:/app/logs

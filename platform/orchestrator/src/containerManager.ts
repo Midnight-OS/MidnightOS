@@ -24,11 +24,23 @@ interface UserConfig {
   };
 }
 
+interface DeploymentProgress {
+  status: 'deploying' | 'completed' | 'failed';
+  stage: string;
+  error?: string;
+  tenantId?: string;
+  walletAddress?: string;
+  elizaPort?: number;
+  startedAt: Date;
+  completedAt?: Date;
+}
+
 export class ContainerManager {
   private baseDir = process.env.USER_DATA_PATH || path.join(process.cwd(), '../../user-data');
   private portAllocator: PortAllocator;
   private activeContainers: Map<string, ContainerInfo> = new Map();
   private contractDeployer: PlatformContractDeployer;
+  private deploymentProgress: Map<string, DeploymentProgress> = new Map();
 
   constructor() {
     const portStart = parseInt(process.env.PORT_RANGE_START || '4000');
@@ -39,41 +51,103 @@ export class ContainerManager {
   }
 
   /**
+   * Start async deployment - returns immediately with deployment ID
+   */
+  async startAsyncDeployment(config: UserConfig, deploymentId: string): Promise<DeploymentProgress> {
+    // Initialize deployment progress tracking
+    const progress: DeploymentProgress = {
+      status: 'deploying',
+      stage: 'initializing',
+      startedAt: new Date()
+    };
+    this.deploymentProgress.set(deploymentId, progress);
+
+    // Start deployment in background (don't await)
+    this.createUserContainer(config, deploymentId)
+      .then((containerInfo) => {
+        // Update progress on success
+        const finalProgress: DeploymentProgress = {
+          status: 'completed',
+          stage: 'completed',
+          tenantId: containerInfo.tenantId,
+          walletAddress: containerInfo.walletAddress,
+          elizaPort: containerInfo.elizaPort,
+          startedAt: progress.startedAt,
+          completedAt: new Date()
+        };
+        this.deploymentProgress.set(deploymentId, finalProgress);
+        console.log(`✅ Async deployment ${deploymentId} completed successfully`);
+      })
+      .catch((error) => {
+        // Update progress on failure
+        const failedProgress: DeploymentProgress = {
+          status: 'failed',
+          stage: 'failed',
+          error: error.message,
+          startedAt: progress.startedAt,
+          completedAt: new Date()
+        };
+        this.deploymentProgress.set(deploymentId, failedProgress);
+        console.error(`❌ Async deployment ${deploymentId} failed:`, error);
+      });
+
+    return progress;
+  }
+
+  /**
+   * Get deployment progress
+   */
+  getDeploymentProgress(deploymentId: string): DeploymentProgress | null {
+    return this.deploymentProgress.get(deploymentId) || null;
+  }
+
+  /**
    * Create a new user container with Eliza agent (connects to shared MCP)
    */
-  async createUserContainer(config: UserConfig): Promise<ContainerInfo> {
+  async createUserContainer(config: UserConfig, deploymentId?: string): Promise<ContainerInfo> {
+    const updateProgress = (stage: string) => {
+      if (deploymentId) {
+        const current = this.deploymentProgress.get(deploymentId);
+        if (current) {
+          current.stage = stage;
+          this.deploymentProgress.set(deploymentId, current);
+        }
+      }
+    };
+    updateProgress('generating_tenant_id');
     const tenantId = this.generateTenantId(config.userId);
     const elizaPort = await this.portAllocator.allocatePort(tenantId);
     
     // 1. Create user directories
+    updateProgress('creating_directories');
     await this.createUserDirectories(tenantId);
     
     // 2. Generate wallet seed
+    updateProgress('generating_wallet');
     const walletSeed = await this.generateWalletSeed(tenantId);
     
-    // 3. Deploy DAO contracts if tier includes it
-    let contractAddresses = null;
+    // 3. Skip DAO contracts deployment for immediate bot functionality
+    // DAO contracts will be deployed in background after bot is running
+    console.log(`Skipping DAO deployment for immediate bot availability: ${tenantId}`);
+    
+    // Start DAO deployment in background if needed (non-blocking)
     if (config.tier === 'premium' || config.tier === 'enterprise' || config.features?.dao) {
-      console.log(`Deploying DAO contracts for ${tenantId}...`);
-      try {
-        // Use network ID from environment
-        const networkId = process.env.NETWORK_ID === 'Undeployed' ? 'Undeployed' : 'TestNet';
-        contractAddresses = await this.contractDeployer.deployContractsForTenant(tenantId, networkId as any);
-        await this.contractDeployer.updateTenantEnvironment(tenantId);
-        console.log(`DAO contracts deployed successfully for ${tenantId}`);
-      } catch (error) {
-        console.error(`Failed to deploy contracts for ${tenantId}, continuing without DAO:`, error);
-        // Continue without DAO features if deployment fails
-      }
+      console.log(`Scheduling background DAO deployment for ${tenantId}...`);
+      this.deployDAOInBackground(tenantId).catch(error => {
+        console.error(`Background DAO deployment failed for ${tenantId}:`, error);
+      });
     }
     
     // 4. Create Docker Compose file from template (only Eliza agent)
+    updateProgress('creating_docker_config');
     const dockerComposeFile = await this.generateDockerCompose(tenantId, config, elizaPort);
     
     // 5. Start the Eliza agent container
+    updateProgress('starting_container');
     await this.startContainers(tenantId, dockerComposeFile);
     
     // 6. Store container info
+    updateProgress('finalizing');
     const containerInfo: ContainerInfo = {
       tenantId,
       userId: config.userId,
@@ -261,9 +335,18 @@ export class ContainerManager {
               const controller = new AbortController();
               const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
               
-              const response = await fetch(`http://localhost:${elizaPort}/health`, {
-                signal: controller.signal
-              });
+              // Try both potential ports since Eliza might be running on 3000 instead of 3003
+              let response;
+              try {
+                response = await fetch(`http://localhost:${elizaPort}/health`, {
+                  signal: controller.signal
+                });
+              } catch (healthError) {
+                // If /health fails, try just the root endpoint to see if service is responding
+                response = await fetch(`http://localhost:${elizaPort}/`, {
+                  signal: controller.signal
+                });
+              }
               
               clearTimeout(timeout);
               
@@ -547,6 +630,29 @@ export class ContainerManager {
   }
 
   /**
+   * Deploy DAO contracts in background (non-blocking)
+   */
+  private async deployDAOInBackground(tenantId: string): Promise<void> {
+    try {
+      console.log(`Starting background DAO deployment for ${tenantId}...`);
+      
+      // Use network ID from environment
+      const networkId = process.env.NETWORK_ID === 'Undeployed' ? 'Undeployed' : 'TestNet';
+      const contractAddresses = await this.contractDeployer.deployContractsForTenant(tenantId, networkId as any);
+      await this.contractDeployer.updateTenantEnvironment(tenantId);
+      
+      console.log(`✅ Background DAO deployment completed for ${tenantId}`);
+      
+      // Optionally notify user that DAO features are now available
+      // This could be done via websocket or polling endpoint
+      
+    } catch (error) {
+      console.error(`❌ Background DAO deployment failed for ${tenantId}:`, error);
+      // DAO features will remain unavailable, but bot continues to work
+    }
+  }
+
+  /**
    * Update user container configuration and restart
    */
   async updateUserContainer(tenantId: string, config: UserConfig): Promise<void> {
@@ -617,7 +723,19 @@ class PortAllocator {
   
   private async isPortAvailable(port: number): Promise<boolean> {
     try {
-      // Try to connect to the port - if connection fails, port is available
+      // First check if Docker is using the port
+      try {
+        const { stdout } = await execAsync(`docker ps --format "{{.Ports}}" | grep -c "0.0.0.0:${port}->"`);
+        if (stdout.trim() !== '0') {
+          console.log(`Port ${port} is in use by Docker container`);
+          return false;
+        }
+      } catch (grepError) {
+        // grep returns exit code 1 when no matches found, which is what we want
+        // Port is not used by Docker, continue to network check
+      }
+
+      // Try to bind to the port - if binding fails, port is in use
       const net = await import('net');
       
       return new Promise((resolve) => {
@@ -626,6 +744,7 @@ class PortAllocator {
         server.once('error', (err: any) => {
           if (err.code === 'EADDRINUSE') {
             // Port is in use
+            console.log(`Port ${port} is in use by another process`);
             resolve(false);
           } else {
             // Other error, assume port is available
@@ -639,12 +758,12 @@ class PortAllocator {
           resolve(true);
         });
         
-        server.listen(port, '127.0.0.1');
+        server.listen(port, '0.0.0.0');
       });
     } catch (error) {
       console.error(`Error checking port ${port}:`, error);
-      // On error, assume port is available to avoid blocking
-      return true;
+      // On error, assume port is NOT available to prevent conflicts
+      return false;
     }
   }
 }

@@ -56,25 +56,34 @@ export class PlatformContractDeployer {
       const userAddress = await this.getWalletAddress(seed, networkId);
       console.log(`Generated wallet address for ${tenantId}: ${userAddress}`);
 
-      // Auto-fund user wallet if enabled
+      // Auto-fund user wallet if enabled and proof server is available
       if (autoFund && process.env.ENABLE_AUTO_FUNDING !== 'false') {
-        console.log('🚀 Auto-funding user wallet...');
-        const funded = await adminWallet.fundUserWallet(userAddress);
-        if (!funded) {
-          console.warn('⚠️ Auto-funding failed, user will need to manually fund wallet');
-          console.log(`User wallet address: ${userAddress}`);
+        // Check if proof server is available (required for funding transactions)
+        const { isProofServerAvailable } = await import('./api');
+        
+        if (!isProofServerAvailable()) {
+          console.warn('⚠️ Proof server is not available - skipping auto-funding');
+          console.log('💡 User will need to manually fund wallet once proof server is running');
+          console.log(`   User wallet address: ${userAddress}`);
         } else {
-          console.log('✅ User wallet funded successfully');
-          // Wait briefly for transaction to be broadcast to blockchain
-          // The auto-deploy script will handle waiting for wallet sync and fund confirmation
-          console.log('⏳ Giving transaction time to propagate (10s)...');
-          console.log('   (Auto-deploy will wait for full wallet sync and fund confirmation)');
-          await new Promise(resolve => setTimeout(resolve, 10000));
+          console.log('🚀 Auto-funding user wallet...');
+          const funded = await adminWallet.fundUserWallet(userAddress);
+          if (!funded) {
+            console.warn('⚠️ Auto-funding failed, user will need to manually fund wallet');
+            console.log(`   User wallet address: ${userAddress}`);
+          } else {
+            console.log('✅ User wallet funded successfully');
+            // The auto-deploy script will handle waiting for:
+            // - Wallet sync (up to 120 seconds)
+            // - Balance > 0 confirmation (up to 180 seconds)
+            // No need to wait here - let the auto-deploy script do the robust checking
+            console.log('   (Auto-deploy will wait for full wallet sync and fund confirmation)');
+          }
         }
       }
 
-      // Run auto-deploy script
-      const command = `cd ${this.mcpServicePath} && bun run auto-deploy -a ${tenantId} -n ${networkId} -s ${seed}`;
+      // Run auto-deploy script with wallet funding
+      const command = `cd ${this.mcpServicePath} && bun run auto-deploy -a ${tenantId} -n ${networkId} -s ${seed} --fund-wallet`;
       const { stdout, stderr } = await execAsync(command, {
         env: {
           ...process.env,

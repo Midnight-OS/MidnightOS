@@ -98,7 +98,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [isCreating, setIsCreating] = useState(false)
-  const [deploymentId, setDeploymentId] = useState<string>("")
+  const [botId, setBotId] = useState<string>("")
   
   // Bot configuration
   const [botName, setBotName] = useState("My DAO Bot")
@@ -116,23 +116,19 @@ export default function OnboardingPage() {
     currentStep,
     stepId: steps[currentStep]?.id,
     isCreating,
-    deploymentId
+    botId
   })
 
   const handleNext = async () => {
     console.log('handleNext called, currentStep:', currentStep)
     if (currentStep === 2) { // After platform selection, start deployment
-      console.log('Moving to deployment step immediately')
-      // Generate a temporary deployment ID
-      const tempDeploymentId = `deploy-${Date.now()}`
-      setDeploymentId(tempDeploymentId)
+      console.log('Moving to deployment step and creating bot')
       
       // Move to deployment step IMMEDIATELY
       setCurrentStep(currentStep + 1)
       
-      // Now create the bot in the background
-      console.log('Starting bot creation in background...')
-      createBot()
+      // Create the bot (API returns immediately now!)
+      await createBot()
     } else if (currentStep === steps.length - 1) {
       // Complete onboarding
       console.log('Completing onboarding, redirecting to dashboard')
@@ -150,7 +146,7 @@ export default function OnboardingPage() {
   }
 
   const createBot = async () => {
-    console.log('createBot called in background')
+    console.log('createBot called - API now returns immediately!')
     try {
       // Prepare platforms configuration
       const platforms: any = {}
@@ -170,47 +166,34 @@ export default function OnboardingPage() {
         platforms
       })
 
-      // Add timeout to prevent infinite hanging
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+      // Create the bot via API - now returns IMMEDIATELY with status: 'deploying'
+      const response = await apiClient.createBot({
+        name: botName,
+        features: {
+          wallet: true,
+          dao: true,
+          marketplace: false
+        },
+        platforms,
+        tier: 'premium' // Premium tier to enable DAO features
+      }) as any
 
-      try {
-        // Create the bot via API with new structure
-        const response = await apiClient.createBot({
-          name: botName,
-          features: {
-            wallet: true,
-            dao: true,
-            marketplace: false
-          },
-          platforms,
-          tier: 'basic'
-        }) as any
+      console.log('Bot creation response (immediate!):', response)
 
-        clearTimeout(timeoutId)
-        console.log('Bot creation response:', response)
-
-        // Update deployment ID with real one if available
-        const botId = response.bot?.id || response.id
-        if (botId && botId !== deploymentId) {
-          console.log('Updating deploymentId to:', botId)
-          setDeploymentId(botId)
-        }
-        
-        toast.success('Bot creation started! Deploying to blockchain...')
-      } catch (fetchError: any) {
-        clearTimeout(timeoutId)
-        if (fetchError.name === 'AbortError') {
-          console.error('Bot creation timed out after 30 seconds')
-          toast.error('Bot creation is taking longer than expected. Continuing with deployment...')
-        } else {
-          throw fetchError
-        }
+      // Get bot ID from response
+      const newBotId = response.bot?.id || response.id
+      if (newBotId) {
+        console.log('Got bot ID:', newBotId)
+        setBotId(newBotId)
+        toast.success(response.bot?.message || 'Bot deployment started! This will take 3-5 minutes.')
+      } else {
+        console.warn('No bot ID in response:', response)
+        toast.error('Failed to get bot ID')
       }
     } catch (error: any) {
       console.error('Bot creation failed:', error)
-      toast.error(error.message || "Failed to create bot, but continuing with demo deployment")
-      // Continue with the deployment animation even if API fails
+      toast.error(error.message || "Failed to create bot")
+      // Don't continue if API fails - user should try again
     }
   }
 
@@ -381,11 +364,11 @@ export default function OnboardingPage() {
         )
 
       case "deploying":
-        console.log('Rendering deploying step with deploymentId:', deploymentId, 'botName:', botName)
+        console.log('Rendering deploying step with botId:', botId, 'botName:', botName)
         return (
           <BotDeploymentLoader
             botName={botName}
-            deploymentId={deploymentId}
+            botId={botId}
             onComplete={() => {
               console.log('BotDeploymentLoader onComplete called')
               setCurrentStep(currentStep + 1)

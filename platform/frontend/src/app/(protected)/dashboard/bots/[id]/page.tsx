@@ -9,6 +9,7 @@ import {
   CheckCircle, MessageSquare, Shield, Users, DollarSign,
   Copy, ExternalLink
 } from "lucide-react"
+import apiClient from "@/lib/api-client"
 
 interface BotDetails {
   id: string
@@ -54,23 +55,13 @@ export default function BotDetailPage() {
 
   const fetchBot = async () => {
     try {
-      const token = localStorage.getItem('authToken')
+      const token = localStorage.getItem('auth_token')
       if (!token) {
         router.push('/login')
         return
       }
 
-      const response = await fetch(`/api/bots/${botId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch bot details')
-      }
-
-      const data = await response.json()
+      const data = await apiClient.getBot(botId) as { bot: BotDetails }
       setBot(data.bot)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load bot')
@@ -81,17 +72,8 @@ export default function BotDetailPage() {
 
   const fetchLogs = async () => {
     try {
-      const token = localStorage.getItem('authToken')
-      const response = await fetch(`/api/bots/${botId}/logs`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setLogs(data.logs)
-      }
+      const data = await apiClient.getBotLogs(botId) as { logs: string }
+      setLogs(data.logs)
     } catch (err) {
       console.error('Failed to fetch logs:', err)
     }
@@ -100,16 +82,20 @@ export default function BotDetailPage() {
   const handleBotAction = async (action: 'start' | 'stop' | 'pause' | 'resume') => {
     setActionLoading(action)
     try {
-      const token = localStorage.getItem('authToken')
-      const response = await fetch(`/api/bots/${botId}/${action}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to ${action} bot`)
+      // Call the appropriate API client method based on action
+      switch (action) {
+        case 'start':
+          await apiClient.startBot(botId)
+          break
+        case 'stop':
+          await apiClient.stopBot(botId)
+          break
+        case 'pause':
+          await apiClient.pauseBot(botId)
+          break
+        case 'resume':
+          await apiClient.resumeBot(botId)
+          break
       }
 
       // Refresh bot status

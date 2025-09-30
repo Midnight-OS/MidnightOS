@@ -29,6 +29,11 @@ interface BotCardProps {
     transactionCount?: number
     lastActivity?: string
   }
+  daoStatus?: {
+    deployed: boolean
+    deploying: boolean
+    contractAddress?: string
+  }
   createdAt?: string
   tier?: string
 }
@@ -93,9 +98,15 @@ export function BotCard(bot: BotCardProps) {
           </span>
         )}
         {bot.features.dao && (
-          <span className="text-xs px-2 py-1 bg-primary/10 rounded flex items-center gap-1">
+          <span className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
+            bot.daoStatus?.deployed 
+              ? 'bg-green-500/10 text-green-500' 
+              : bot.daoStatus?.deploying 
+                ? 'bg-yellow-500/10 text-yellow-500'
+                : 'bg-primary/10'
+          }`}>
             <Shield className="w-3 h-3" />
-            DAO
+            DAO {bot.daoStatus?.deploying ? '(deploying...)' : bot.daoStatus?.deployed ? '✓' : ''}
           </span>
         )}
         {bot.features.marketplace && (

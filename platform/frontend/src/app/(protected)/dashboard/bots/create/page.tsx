@@ -54,7 +54,7 @@ export default function CreateBotPage() {
 
     setTestingPlatform('discord')
     try {
-      const token = localStorage.getItem('authToken')
+      const token = localStorage.getItem('auth_token')
       const response = await fetch('http://localhost:3002/api/bots/test/discord', {
         method: 'POST',
         headers: {
@@ -97,7 +97,7 @@ export default function CreateBotPage() {
 
     setTestingPlatform('telegram')
     try {
-      const token = localStorage.getItem('authToken')
+      const token = localStorage.getItem('auth_token')
       const response = await fetch('http://localhost:3002/api/bots/test/telegram', {
         method: 'POST',
         headers: {
@@ -135,7 +135,7 @@ export default function CreateBotPage() {
     setError(null)
 
     try {
-      const token = localStorage.getItem('authToken')
+      const token = localStorage.getItem('auth_token')
       if (!token) {
         router.push('/login')
         return

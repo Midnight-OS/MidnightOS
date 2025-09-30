@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Bot, MessageSquare, Settings } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import apiClient from '@/lib/api-client';
 
 interface Bot {
   id: string;
@@ -35,18 +36,7 @@ export default function BotChatPage() {
 
   const loadBot = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`/api/bots/${params.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load bot');
-      }
-
-      const data = await response.json();
+      const data = await apiClient.getBot(params.id as string);
       setBot(data.bot);
       setWebChatEnabled(data.bot.platforms?.webChat?.enabled || false);
     } catch (error) {
@@ -62,23 +52,7 @@ export default function BotChatPage() {
 
   const toggleWebChat = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`/api/bots/${params.id}/platforms/webchat/toggle`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          enabled: !webChatEnabled,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to toggle web chat');
-      }
-
-      const data = await response.json();
+      const data = await apiClient.toggleBotWebChat(params.id as string, !webChatEnabled);
       setWebChatEnabled(!webChatEnabled);
       
       toast({

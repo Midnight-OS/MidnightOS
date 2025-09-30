@@ -27,6 +27,7 @@ interface DeploymentConfig {
   seedPhrase?: string;
   autoFund?: boolean;
   fundAmount?: bigint;
+  fundWallet?: boolean;
 }
 
 class AutoDeploymentManager {
@@ -136,6 +137,15 @@ class AutoDeploymentManager {
       walletFilename,
       walletConfig
     );
+    
+    // If wallet funding is enabled, fund the wallet first (but wait for wallet to be ready)
+    if (this.config.fundWallet) {
+      // Wait for wallet to be ready first
+      while (!this.walletService.isReady()) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      await this.fundWallet();
+    }
     
     // Wait for wallet to be ready and funds to arrive
     this.logger.info('Waiting for wallet to sync and receive funds...');
@@ -292,6 +302,37 @@ class AutoDeploymentManager {
     this.logger.info('Treasury funding handled during deployment');
   }
 
+  private async fundWallet() {
+    this.logger.info('Auto-funding wallet from genesis wallet...');
+    
+    try {
+      // Get the wallet address
+      const walletAddress = this.walletService.getAddress();
+      this.logger.info(`Funding wallet ${walletAddress} with 500 NIGHT...`);
+      
+      // Use the funding script to fund the wallet
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+      
+      const fundCommand = `pnpm tsx scripts/fund-from-genesis.ts --address "${walletAddress}" --amount 500`;
+      
+      const { stdout, stderr } = await execAsync(fundCommand);
+      
+      if (stderr && !stderr.includes('warning')) {
+        this.logger.error('Funding error:', stderr);
+        throw new Error(`Failed to fund wallet: ${stderr}`);
+      }
+      
+      this.logger.info('Wallet funding transaction submitted');
+      this.logger.info(stdout);
+      
+    } catch (error: any) {
+      this.logger.error('Failed to auto-fund wallet:', error.message);
+      throw error;
+    }
+  }
+
   private async saveDeploymentConfig(addresses: any) {
     // Update .env file with deployed addresses
     const envContent = await fs.readFile(this.envPath, 'utf-8').catch(() => '');
@@ -357,6 +398,9 @@ async function main() {
       case '-f':
         config.autoFund = true;
         config.fundAmount = BigInt(args[++i] || 1000000);
+        break;
+      case '--fund-wallet':
+        config.fundWallet = true;
         break;
       case '--help':
       case '-h':

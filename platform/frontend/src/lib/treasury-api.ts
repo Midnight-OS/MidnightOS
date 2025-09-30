@@ -109,7 +109,7 @@ class TreasuryAPIService {
 
   constructor() {
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('authToken');
+      this.token = localStorage.getItem('auth_token');
     }
   }
 
@@ -278,14 +278,14 @@ class TreasuryAPIService {
   setToken(token: string) {
     this.token = token;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('authToken', token);
+      localStorage.setItem('auth_token', token);
     }
   }
 
   clearToken() {
     this.token = null;
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('auth_token');
     }
   }
 

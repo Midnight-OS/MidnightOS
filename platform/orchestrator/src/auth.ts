@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
+import { DatabaseService } from './database';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'midnight-os-secret-key-change-in-production';
 
@@ -13,6 +14,11 @@ export interface User {
 }
 
 export class AuthService {
+  private db: DatabaseService;
+
+  constructor(db: DatabaseService) {
+    this.db = db;
+  }
   /**
    * Hash password for storage
    */
@@ -44,8 +50,14 @@ export class AuthService {
   async verifyToken(token: string): Promise<{ id: string; email: string }> {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      // In production, fetch user from database
-      return { id: decoded.userId, email: `user_${decoded.userId}@example.com` };
+      
+      // Fetch user from database
+      const user = await this.db.getUser(decoded.userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      return { id: user.id, email: user.email };
     } catch (error) {
       throw new Error('Invalid token');
     }

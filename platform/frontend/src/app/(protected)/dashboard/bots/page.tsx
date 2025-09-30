@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Search, Grid3x3, List, RefreshCw, AlertCircle, Bot } from "lucide-react"
+import { Plus, Search, Grid3x3, List, RefreshCw, AlertCircle, Bot, Loader2, Clock } from "lucide-react"
 import { Card } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import Link from "next/link"
 import apiClient from "@/lib/api-client"
 import toast from "react-hot-toast"
@@ -62,11 +63,30 @@ export default function BotsPage() {
 
   useEffect(() => {
     fetchBots()
-  }, [])
+    
+    // Auto-refresh for deploying bots every 5 seconds
+    const interval = setInterval(() => {
+      const hasDeployingBots = bots.some(bot => bot.status === 'deploying')
+      if (hasDeployingBots) {
+        console.log('Auto-refreshing for deploying bots...')
+        fetchBots()
+      }
+    }, 5000)
+    
+    return () => clearInterval(interval)
+  }, [bots])
 
   const filteredBots = bots.filter(bot => {
     const matchesSearch = bot.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const status = bot.containerStatus === 'running' ? 'online' : 'offline'
+    
+    // Determine bot status for filtering
+    let status = 'offline'
+    if (bot.status === 'deploying') {
+      status = 'deploying'
+    } else if (bot.containerStatus === 'running') {
+      status = 'online'
+    }
+    
     const matchesStatus = filterStatus === "all" || status === filterStatus
     return matchesSearch && matchesStatus
   })
@@ -150,8 +170,9 @@ export default function BotsPage() {
           className="px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="all">All Status</option>
-          <option value="online">Running</option>
-          <option value="offline">Stopped</option>
+          <option value="deploying">⏳ Deploying</option>
+          <option value="online">✅ Running</option>
+          <option value="offline">⏸️ Stopped</option>
         </select>
 
         {/* View Mode */}
@@ -175,17 +196,36 @@ export default function BotsPage() {
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBots.map((bot) => (
-            <Card key={bot.id} className="p-6 hover:shadow-lg transition-shadow">
+            <Card key={bot.id} className={`p-6 hover:shadow-lg transition-shadow ${
+              bot.status === 'deploying' ? 'border-amber-500/50 bg-amber-500/5' : ''
+            }`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-lg">{bot.name}</h3>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  bot.containerStatus === 'running' 
+                <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
+                  bot.status === 'deploying'
+                    ? 'bg-amber-500/20 text-amber-500'
+                    : bot.containerStatus === 'running' 
                     ? 'bg-green-500/20 text-green-500' 
                     : 'bg-gray-500/20 text-gray-500'
                 }`}>
-                  {bot.containerStatus === 'running' ? 'Online' : 'Offline'}
+                  {bot.status === 'deploying' && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {bot.status === 'deploying' ? 'Deploying' : bot.containerStatus === 'running' ? 'Online' : 'Offline'}
                 </span>
               </div>
+              
+              {/* Deployment Progress */}
+              {bot.status === 'deploying' && (
+                <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 mb-2">
+                    <Clock className="w-3 h-3" />
+                    <span className="font-medium">Setting up your bot...</span>
+                  </div>
+                  <Progress value={33} className="h-1.5 mb-1" />
+                  <p className="text-xs text-muted-foreground">
+                    This takes 3-5 minutes. Your bot will appear here when ready.
+                  </p>
+                </div>
+              )}
               
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-sm">
@@ -221,7 +261,9 @@ export default function BotsPage() {
               </div>
               
               <Link href={`/dashboard/bots/${bot.id}`}>
-                <button className="btn-primary w-full text-sm">Manage Bot</button>
+                <button className="btn-primary w-full text-sm" disabled={bot.status === 'deploying'}>
+                  {bot.status === 'deploying' ? 'Deploying...' : 'Manage Bot'}
+                </button>
               </Link>
             </Card>
           ))}
@@ -229,21 +271,31 @@ export default function BotsPage() {
       ) : (
         <div className="space-y-4">
           {filteredBots.map((bot) => (
-            <Card key={bot.id} className="p-6">
+            <Card key={bot.id} className={`p-6 ${
+              bot.status === 'deploying' ? 'border-amber-500/50 bg-amber-500/5' : ''
+            }`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-primary" />
+                <div className="flex items-center gap-4 flex-1">
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                    bot.status === 'deploying' ? 'bg-amber-500/10' : 'bg-primary/10'
+                  }`}>
+                    {bot.status === 'deploying' ? (
+                      <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
+                    ) : (
+                      <Bot className="w-6 h-6 text-primary" />
+                    )}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-semibold">{bot.name}</h3>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        bot.containerStatus === 'running'
+                      <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                        bot.status === 'deploying'
+                          ? 'bg-amber-500/20 text-amber-500'
+                          : bot.containerStatus === 'running'
                           ? 'bg-green-500/20 text-green-500'
                           : 'bg-gray-500/20 text-gray-500'
                       }`}>
-                        {bot.containerStatus === 'running' ? 'Online' : 'Offline'}
+                        {bot.status === 'deploying' ? '⏳ Deploying' : bot.containerStatus === 'running' ? 'Online' : 'Offline'}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {getPlatforms(bot).join(' • ') || 'No platforms'}
@@ -252,6 +304,16 @@ export default function BotsPage() {
                         {bot.tier || 'Basic'}
                       </span>
                     </div>
+                    
+                    {/* Deployment Progress Bar */}
+                    {bot.status === 'deploying' && (
+                      <div className="mt-2 max-w-md">
+                        <Progress value={33} className="h-1.5 mb-1" />
+                        <p className="text-xs text-muted-foreground">
+                          Setting up blockchain wallet and contracts (3-5 min)
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -273,7 +335,12 @@ export default function BotsPage() {
                     <div className="text-xs text-muted-foreground">Wallet</div>
                   </div>
                   <Link href={`/dashboard/bots/${bot.id}`}>
-                    <button className="btn-primary px-4 py-2 text-sm">Manage</button>
+                    <button 
+                      className="btn-primary px-4 py-2 text-sm" 
+                      disabled={bot.status === 'deploying'}
+                    >
+                      {bot.status === 'deploying' ? 'Deploying...' : 'Manage'}
+                    </button>
                   </Link>
                 </div>
               </div>

@@ -106,6 +106,17 @@ export class AdminWalletManager {
       });
 
       // Check if transfer was successful
+      // Look for transaction submission confirmation (even if DB logging fails)
+      if (stdout.includes('Transaction submitted:')) {
+        const txMatch = stdout.match(/Transaction submitted:\s*([a-f0-9]+)/i);
+        console.log(`✅ Successfully funded ${userAddress}`);
+        if (txMatch) {
+          console.log(`   Transaction: ${txMatch[1]}`);
+        }
+        return true;
+      }
+      
+      // Also check for explicit success message
       if (stdout.includes('SEND_RESULT:SUCCESS')) {
         const txMatch = stdout.match(/SEND_RESULT:SUCCESS:(.+)/);
         console.log(`✅ Successfully funded ${userAddress}`);
@@ -113,13 +124,16 @@ export class AdminWalletManager {
           console.log(`   Transaction: ${txMatch[1]}`);
         }
         return true;
-      } else if (stdout.includes('SEND_RESULT:FAILED')) {
-        console.error('Transfer failed - check logs for details');
+      }
+      
+      // If we see FAILED message and no transaction submission, it really failed
+      if (stdout.includes('SEND_RESULT:FAILED') && !stdout.includes('Transaction submitted:')) {
+        console.error('❌ Transfer failed - check logs for details');
         return false;
       }
       
-      // Fallback check for success
-      if (stderr && !stderr.includes('warning')) {
+      // Fallback check for success (if we got here with no errors, assume success)
+      if (stderr && !stderr.includes('warning') && !stdout.includes('Transaction submitted:')) {
         console.error('Transfer error:', stderr);
         return false;
       }

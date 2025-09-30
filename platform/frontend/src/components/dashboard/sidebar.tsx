@@ -39,7 +39,7 @@ export function Sidebar() {
     // Get bots from API
     const fetchBots = async () => {
       try {
-        const token = localStorage.getItem('authToken')
+        const token = localStorage.getItem('auth_token')
         if (token) {
           const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api'}/bots`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -63,7 +63,7 @@ export function Sidebar() {
   }, [pathname])
   
   const handleLogout = () => {
-    localStorage.removeItem('authToken')
+    localStorage.removeItem('auth_token')
     localStorage.removeItem('userEmail')
     router.push('/login')
   }

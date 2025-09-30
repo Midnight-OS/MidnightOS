@@ -11,30 +11,29 @@ dotenv.config();
 
 const app = express();
 const containerManager = new ContainerManager();
-const authService = new AuthService();
 const db = new DatabaseService();
+const authService = new AuthService(db);
 
 app.use(cors());
 app.use(express.json());
 
 // Middleware for authentication
 const authenticate = async (req: any, res: any, next: any) => {
-  // Skip authentication in development mode if SKIP_AUTH is set
-  if (process.env.SKIP_AUTH === 'true' || process.env.NODE_ENV === 'development') {
-    req.user = { id: 'dev-user-123', email: 'dev@midnightos.ai' };
-    return next();
-  }
-
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token provided' });
+  
+  // If no token provided, check if we should use dev bypass
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
   
   try {
-    // Support dev-token for development
+    // Support dev-token for development (only with explicit token)
     if (token === 'dev-token' && process.env.NODE_ENV === 'development') {
       req.user = { id: 'dev-user-123', email: 'dev@midnightos.ai' };
       return next();
     }
     
+    // Validate real token (even in development!)
     const user = await authService.verifyToken(token);
     req.user = user;
     next();
@@ -160,7 +159,7 @@ app.get('/api/activities/unread-count', authenticate, async (req, res) => {
 // ============ Protected Endpoints ============
 
 /**
- * Create a new bot for the user
+ * Create a new bot for the user (async deployment)
  */
 app.post('/api/bots', authenticate, async (req, res) => {
   try {
@@ -171,6 +170,22 @@ app.post('/api/bots', authenticate, async (req, res) => {
       tier = 'basic'
     } = req.body;
     
+    // Generate deployment ID
+    const deploymentId = `deploy_${req.user!.id}_${Date.now()}`;
+    
+    // Create bot record FIRST with 'deploying' status
+    const bot = await db.createBot({
+      userId: req.user!.id,
+      name,
+      tenantId: deploymentId, // Temporary ID until deployment completes
+      walletAddress: 'deploying...',
+      elizaPort: 0, // Will be set after deployment
+      features,
+      platforms,
+      status: 'deploying'
+    });
+    
+    // Start async deployment in background
     const userConfig = {
       userId: req.user!.id,
       email: req.user!.email,
@@ -179,32 +194,63 @@ app.post('/api/bots', authenticate, async (req, res) => {
       platforms
     };
     
-    // Create container for user
-    const containerInfo = await containerManager.createUserContainer(userConfig);
+    // Start async deployment (returns immediately, deployment happens in background)
+    await containerManager.startAsyncDeployment(userConfig, deploymentId);
     
-    // Save bot to database
-    const bot = await db.createBot({
-      userId: req.user!.id,
-      name,
-      tenantId: containerInfo.tenantId,
-      walletAddress: containerInfo.walletAddress,
-      elizaPort: containerInfo.elizaPort,
-      features,
-      platforms,
-      status: 'active'
-    });
-    
+    // Return immediately to user
     res.json({
       success: true,
       bot: {
         id: bot.id,
         name: bot.name,
-        walletAddress: containerInfo.walletAddress,
+        deploymentId,
         status: 'deploying',
         features,
-        platforms: Object.keys(platforms)
+        platforms: Object.keys(platforms),
+        message: 'Bot deployment started. This may take 3-5 minutes. Check status using GET /api/bots/:botId or GET /api/bots/:botId/deployment-status'
       }
     });
+    
+    // Poll for deployment completion and update bot record (fire and forget)
+    const checkInterval = setInterval(async () => {
+      const deploymentProgress = containerManager.getDeploymentProgress(deploymentId);
+      
+      if (deploymentProgress?.status === 'completed') {
+        clearInterval(checkInterval);
+        // Update bot with real deployment info
+        try {
+          await db.updateBot(bot.id, {
+            tenantId: deploymentProgress.tenantId!,
+            walletAddress: deploymentProgress.walletAddress!,
+            elizaPort: deploymentProgress.elizaPort!,
+            status: 'active'
+          });
+          console.log(`✅ Bot ${bot.id} (${bot.name}) deployment completed`);
+          console.log(`   Tenant ID: ${deploymentProgress.tenantId}`);
+          console.log(`   Wallet: ${deploymentProgress.walletAddress}`);
+          console.log(`   Port: ${deploymentProgress.elizaPort}`);
+        } catch (updateError) {
+          console.error(`Failed to update bot ${bot.id}:`, updateError);
+        }
+      } else if (deploymentProgress?.status === 'failed') {
+        clearInterval(checkInterval);
+        try {
+          await db.updateBot(bot.id, {
+            status: 'failed'
+          });
+          console.error(`❌ Bot ${bot.id} (${bot.name}) deployment failed: ${deploymentProgress.error}`);
+        } catch (updateError) {
+          console.error(`Failed to update bot ${bot.id}:`, updateError);
+        }
+      }
+    }, 3000); // Check every 3 seconds
+    
+    // Safety timeout: stop checking after 10 minutes
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      console.log(`⏱️ Deployment monitoring timeout for bot ${bot.id}`);
+    }, 600000);
+    
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -269,19 +315,81 @@ app.get('/api/bots/:botId', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
-    // Get wallet balance
-    const balanceResponse = await fetch(`http://localhost:${bot.walletPort}/wallet/balance`);
-    const balance = await balanceResponse.json();
+    // If bot is still deploying, return deployment status
+    if (bot.status === 'deploying') {
+      const deploymentProgress = containerManager.getDeploymentProgress(bot.tenantId);
+      return res.json({
+        bot,
+        deploymentProgress: deploymentProgress || {
+          status: 'deploying',
+          stage: 'unknown',
+          message: 'Deployment in progress...'
+        }
+      });
+    }
     
-    // Get transaction history
-    const txResponse = await fetch(`http://localhost:${bot.walletPort}/wallet/transactions`);
-    const transactions: any = await txResponse.json();
+    // Get wallet balance
+    try {
+      const balanceResponse = await fetch(`http://localhost:${bot.elizaPort}/wallet/balance`);
+      const balance = await balanceResponse.json();
+      
+      // Get transaction history
+      const txResponse = await fetch(`http://localhost:${bot.elizaPort}/wallet/transactions`);
+      const transactions: any = await txResponse.json();
+      
+      res.json({
+        bot,
+        wallet: {
+          balance,
+          transactions: Array.isArray(transactions) ? transactions.slice(0, 10) : [] // Last 10 transactions
+        }
+      });
+    } catch (error) {
+      // If container not ready yet, return bot info without wallet data
+      res.json({
+        bot,
+        wallet: {
+          status: 'initializing',
+          message: 'Wallet is being initialized...'
+        }
+      });
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get deployment status for a bot
+ */
+app.get('/api/bots/:botId/deployment-status', authenticate, async (req, res) => {
+  try {
+    const bot = await db.getBot(req.params.botId);
+    
+    if (bot.userId !== req.user!.id) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    const deploymentProgress = containerManager.getDeploymentProgress(bot.tenantId);
+    
+    if (!deploymentProgress) {
+      // If no deployment progress, bot is either completed or never started
+      return res.json({
+        status: bot.status === 'active' ? 'completed' : 'unknown',
+        bot: {
+          id: bot.id,
+          status: bot.status,
+          walletAddress: bot.walletAddress,
+          elizaPort: bot.elizaPort
+        }
+      });
+    }
     
     res.json({
-      bot,
-      wallet: {
-        balance,
-        transactions: Array.isArray(transactions) ? transactions.slice(0, 10) : [] // Last 10 transactions
+      ...deploymentProgress,
+      bot: {
+        id: bot.id,
+        name: bot.name
       }
     });
   } catch (error: any) {
@@ -1449,14 +1557,20 @@ function validateEnvironment(): void {
 }
 
 // Verify platform services are running
+// Track service availability for runtime checks
+const serviceAvailability = {
+  proofServer: false,
+  mcp: false
+};
+
 async function verifyPlatformServices(): Promise<void> {
   // In Docker, use container names; otherwise use localhost
   const mcpHost = process.env.MCP_HOST || (process.env.NODE_ENV === 'production' ? 'midnight-mcp' : 'localhost');
   const proofHost = process.env.PROOF_HOST || (process.env.NODE_ENV === 'production' ? 'proof-server' : 'localhost');
   
   const services = [
-    { name: 'MCP', url: `http://${mcpHost}:3001/health`, critical: false },
-    { name: 'Proof Server', url: `http://${proofHost}:6300/health`, critical: false }
+    { name: 'MCP', url: `http://${mcpHost}:3001/health`, critical: false, key: 'mcp' as const },
+    { name: 'Proof Server', url: `http://${proofHost}:6300/health`, critical: false, key: 'proofServer' as const }
   ];
   
   for (const service of services) {
@@ -1467,10 +1581,12 @@ async function verifyPlatformServices(): Promise<void> {
       });
       if (response.ok) {
         console.log(`✓ ${service.name} service is healthy`);
+        serviceAvailability[service.key] = true;
       } else {
         throw new Error(`${service.name} returned status ${response.status}`);
       }
     } catch (error) {
+      serviceAvailability[service.key] = false;
       if (service.critical) {
         console.error(`✗ Critical service ${service.name} is not running. Please start it first.`);
         if (service.name === 'MCP') {
@@ -1484,6 +1600,11 @@ async function verifyPlatformServices(): Promise<void> {
       }
     }
   }
+}
+
+// Export service availability checker
+export function isProofServerAvailable(): boolean {
+  return serviceAvailability.proofServer;
 }
 
 // Start server

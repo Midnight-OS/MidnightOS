@@ -18,16 +18,29 @@ interface DeploymentStep {
 interface BotDeploymentLoaderProps {
   botName: string
   onComplete?: () => void
-  deploymentId?: string
+  botId?: string
 }
 
-export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDeploymentLoaderProps) {
-  console.log('BotDeploymentLoader mounted with props:', { botName, deploymentId })
+export function BotDeploymentLoader({ botName, onComplete, botId }: BotDeploymentLoaderProps) {
+  console.log('BotDeploymentLoader mounted with props:', { botName, botId })
   
   const [elapsedTime, setElapsedTime] = useState(0)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [deploymentComplete, setDeploymentComplete] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [actualStage, setActualStage] = useState<string>('initializing')
+  const [deploymentInfo, setDeploymentInfo] = useState<any>(null)
+
+  // Map backend stages to frontend steps (new architecture)
+  const stageToStepMap: Record<string, number> = {
+    'initializing': 0,
+    'generating_tenant_id': 0,
+    'creating_directories': 0,
+    'generating_wallet': 0,
+    'creating_docker_config': 1,
+    'starting_container': 2,
+    'finalizing': 3
+  }
 
   const deploymentSteps: DeploymentStep[] = [
     {
@@ -39,27 +52,11 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
       status: 'pending'
     },
     {
-      id: 'wallet',
-      label: 'Funding Wallet',
-      description: 'Transferring initial funds to your wallet',
-      icon: Shield,
-      duration: 15,
-      status: 'pending'
-    },
-    {
-      id: 'sync',
-      label: 'Syncing Blockchain',
-      description: 'Wallet is syncing with blockchain (this takes 60-120s on existing chains)',
-      icon: Database,
-      duration: 90,
-      status: 'pending'
-    },
-    {
-      id: 'contracts',
-      label: 'Deploying DAO Contracts',
-      description: 'Deploying treasury and voting contracts to Midnight blockchain',
-      icon: Database,
-      duration: 60,
+      id: 'docker',
+      label: 'Creating Container',
+      description: 'Building Docker container configuration',
+      icon: Cpu,
+      duration: 10,
       status: 'pending'
     },
     {
@@ -72,10 +69,10 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
     },
     {
       id: 'finalize',
-      label: 'Final Checks',
-      description: 'Verifying all services are healthy and connected',
+      label: 'Ready for Chat & MCP',
+      description: 'Bot is ready! Chat interface and MCP features available',
       icon: Sparkles,
-      duration: 10,
+      duration: 5,
       status: 'pending'
     }
   ]
@@ -84,48 +81,85 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
   const totalDuration = steps.reduce((acc, step) => acc + step.duration, 0)
   const progress = Math.min((elapsedTime / totalDuration) * 100, 100)
 
-  // Poll deployment status (but don't block on it)
+  // Poll deployment status from new endpoint
   useEffect(() => {
-    if (!deploymentId) return
+    if (!botId) {
+      console.log('No botId provided, deployment tracking disabled')
+      return
+    }
     
     let pollCount = 0
-    const maxPolls = 20 // Stop polling after 100 seconds (20 * 5s)
+    const maxPolls = 60 // Stop polling after 3 minutes (60 * 3s) - faster deployment
+    let statusInterval: NodeJS.Timeout
     
     const pollStatus = async () => {
       pollCount++
       
       // Stop polling after max attempts
       if (pollCount > maxPolls) {
-        console.log('Deployment polling timeout reached, continuing anyway')
+        console.log('Deployment polling timeout reached after 6 minutes')
+        setError('Deployment is taking longer than expected. Please check the dashboard.')
         return
       }
       
       try {
-        const response = await apiClient.getBotStatus(deploymentId) as any
-        console.log(`Deployment poll #${pollCount}:`, response?.status)
+        const response = await apiClient.getBotDeploymentStatus(botId) as any
+        console.log(`Deployment poll #${pollCount}:`, response)
         
-        // Update based on actual status
-        if (response.status === 'active' || response.containers?.eliza?.status === 'running') {
-          // Deployment complete!
-          console.log('Bot deployment confirmed active!')
+        setDeploymentInfo(response)
+        
+        // Update actual stage from backend
+        if (response.stage) {
+          setActualStage(response.stage)
+          
+          // Map backend stage to frontend step
+          const stepIndex = stageToStepMap[response.stage] ?? currentStepIndex
+          if (stepIndex !== currentStepIndex) {
+            setCurrentStepIndex(stepIndex)
+            
+            // Update step statuses based on actual progress
+            setSteps(prevSteps => {
+              const newSteps = [...prevSteps]
+              newSteps.forEach((step, index) => {
+                if (index < stepIndex) {
+                  step.status = 'completed'
+                } else if (index === stepIndex) {
+                  step.status = 'active'
+                } else {
+                  step.status = 'pending'
+                }
+              })
+              return newSteps
+            })
+          }
+        }
+        
+        // Check deployment status - redirect immediately when container is running
+        if (response.status === 'completed' || response.stage === 'finalizing' || response.containerStatus === 'running') {
+          console.log('Bot container is ready! Redirecting immediately for chat/MCP access')
           setDeploymentComplete(true)
           setSteps(prevSteps => prevSteps.map(step => ({ ...step, status: 'completed' as const })))
-          setTimeout(() => onComplete?.(), 2000)
-        } else if (response.status === 'failed' || response.status === 'error') {
+          clearInterval(statusInterval)
+          setTimeout(() => onComplete?.(), 1000) // Faster redirect
+        } else if (response.status === 'failed') {
+          console.error('Deployment failed:', response.error)
           setError(response.error || 'Deployment failed. Please try again.')
+          clearInterval(statusInterval)
         }
       } catch (err: any) {
-        // If polling fails, continue with timer-based progress
         console.warn('Failed to poll deployment status:', err)
+        // Continue polling even if one request fails
       }
     }
     
-    // Poll every 5 seconds
-    const statusInterval = setInterval(pollStatus, 5000)
+    // Poll every 3 seconds for real-time updates
+    statusInterval = setInterval(pollStatus, 3000)
     pollStatus() // Initial poll
     
-    return () => clearInterval(statusInterval)
-  }, [deploymentId, onComplete])
+    return () => {
+      if (statusInterval) clearInterval(statusInterval)
+    }
+  }, [botId, onComplete])
 
   // Timer effect
   useEffect(() => {
@@ -142,8 +176,11 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
     return () => clearInterval(timer)
   }, [totalDuration])
 
-  // Step progression effect
+  // Fallback: Step progression effect based on timer (only if no real status updates)
   useEffect(() => {
+    // Only use timer-based progression if we don't have a botId for real tracking
+    if (botId) return
+    
     let accumulatedTime = 0
     for (let i = 0; i < steps.length; i++) {
       accumulatedTime += steps[i].duration
@@ -168,18 +205,17 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
       }
     }
 
-    // Check if deployment animation is complete (don't wait for actual deployment)
-    if (elapsedTime >= totalDuration && !deploymentComplete) {
-      console.log('Deployment animation complete, proceeding to dashboard')
+    // Check if deployment animation is complete (fallback mode only)
+    if (elapsedTime >= totalDuration && !deploymentComplete && !botId) {
+      console.log('Deployment animation complete (fallback mode), proceeding')
       setDeploymentComplete(true)
-      // Mark all steps as completed
       setSteps(prevSteps => prevSteps.map(step => ({ ...step, status: 'completed' as const })))
       setTimeout(() => {
         console.log('Calling onComplete to move to next step')
         onComplete?.()
       }, 2000)
     }
-  }, [elapsedTime, totalDuration, deploymentComplete, onComplete])
+  }, [elapsedTime, totalDuration, deploymentComplete, onComplete, botId])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -188,16 +224,16 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
   }
 
   const funMessages = [
-    "Syncing with Midnight blockchain...",
-    "Your wallet is catching up with the blockchain history...",
-    "Deploying zero-knowledge contracts (this is the cool part!)...",
-    "Your AI agent is learning the ways of the DAO...",
-    "Setting up secure, private treasury management...",
-    "Almost there! Just a bit more blockchain magic...",
+    "Setting up your AI agent container...",
+    "Initializing ElizaOS with Midnight MCP integration...",
     "Your bot is connecting to the Midnight network...",
-    "This takes time because privacy is worth the wait...",
-    "Building your decentralized AI assistant...",
-    "Configuring zkProofs and shielded transactions..."
+    "Configuring chat interface and basic features...",
+    "Almost ready! Just a few more seconds...",
+    "Building your decentralized AI assistant...", 
+    "Setting up secure communication channels...",
+    "DAO contracts will deploy in background once ready...",
+    "Chat & MCP features coming online...",
+    "Your bot is learning its first words..."
   ]
 
   const [currentMessage, setCurrentMessage] = useState(funMessages[0])
@@ -254,7 +290,7 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
-          Your AI agent has been successfully deployed and is ready to manage your DAO treasury.
+          Your AI agent is ready for chat and MCP features! DAO features will be available once background deployment completes.
         </motion.p>
         <motion.button
           className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
@@ -277,10 +313,10 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold mb-2">Deploying {botName}</h2>
         <p className="text-muted-foreground mb-2">
-          This will take <strong>3-4 minutes</strong> for wallet sync and contract deployment.
+          Setting up your bot container... <strong>~30-60 seconds</strong>
         </p>
         <p className="text-sm text-muted-foreground/70">
-          Please keep this page open while we set everything up for you.
+          Chat & MCP features will be available immediately. DAO features deploy in background.
         </p>
       </div>
 
@@ -381,12 +417,22 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
         })}
       </div>
 
-      {/* Deployment ID */}
-      {deploymentId && (
-        <div className="mt-6 text-center">
+      {/* Deployment Info */}
+      {botId && (
+        <div className="mt-6 text-center space-y-1">
           <p className="text-xs text-muted-foreground">
-            Deployment ID: {deploymentId}
+            Bot ID: {botId}
           </p>
+          {deploymentInfo?.tenantId && (
+            <p className="text-xs text-muted-foreground">
+              Tenant: {deploymentInfo.tenantId}
+            </p>
+          )}
+          {deploymentInfo?.walletAddress && (
+            <p className="text-xs text-muted-foreground font-mono">
+              Wallet: {deploymentInfo.walletAddress.slice(0, 20)}...
+            </p>
+          )}
         </div>
       )}
     </div>

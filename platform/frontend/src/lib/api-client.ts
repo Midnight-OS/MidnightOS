@@ -1,5 +1,6 @@
 // API client for orchestrator
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
+console.log('🔧 API_BASE_URL configured as:', API_BASE_URL);
 
 interface LoginCredentials {
   email: string;
@@ -57,7 +58,10 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
+    console.log('🔗 API Request:', { API_BASE_URL, endpoint, fullUrl });
+
+    const response = await fetch(fullUrl, {
       ...options,
       headers,
     });
@@ -175,6 +179,17 @@ class ApiClient {
 
   async getBotLogs(id: string) {
     return this.request(`/bots/${id}/logs`);
+  }
+
+  async getBotDeploymentStatus(id: string) {
+    return this.request(`/bots/${id}/deployment-status`);
+  }
+
+  async toggleBotWebChat(id: string, enabled: boolean) {
+    return this.request(`/bots/${id}/platforms/webchat/toggle`, {
+      method: 'POST',
+      body: JSON.stringify({ enabled }),
+    });
   }
 
   // Chat
