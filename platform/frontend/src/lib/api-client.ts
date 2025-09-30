@@ -141,6 +141,14 @@ class ApiClient {
   async getCurrentUser() {
     return this.request('/auth/me');
   }
+  
+  getToken() {
+    return this.token;
+  }
+  
+  isAuthenticated() {
+    return !!this.token;
+  }
 
   // Bot management
   async getBots() {

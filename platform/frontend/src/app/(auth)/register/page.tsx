@@ -10,6 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import toast from "react-hot-toast"
 import apiClient from "@/lib/api-client"
+import { useAuth } from "@/contexts/AuthContext"
+import { AuthRedirect } from "@/components/AuthRedirect"
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -29,6 +31,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [acceptTerms, setAcceptTerms] = useState(false)
+  const { login } = useAuth()
   
   const {
     register,
@@ -48,6 +51,7 @@ export default function RegisterPage() {
     try {
       const { name, email, password } = data
       const response = await apiClient.register({ name, email, password })
+      login(response.token, response.user)
       toast.success("Account created successfully!")
       router.push("/onboarding")
     } catch (error: any) {
@@ -58,12 +62,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="glass-card p-8"
-    >
+    <AuthRedirect>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="glass-card p-8"
+      >
       {/* Logo */}
       <div className="flex justify-center mb-8">
         <Link href="/" className="flex items-center gap-2">
@@ -210,6 +215,7 @@ export default function RegisterPage() {
           Sign in
         </Link>
       </p>
-    </motion.div>
+      </motion.div>
+    </AuthRedirect>
   )
 }

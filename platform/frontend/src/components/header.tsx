@@ -2,16 +2,34 @@
 
 import Link from "next/link"
 import { useTheme } from "next-themes"
-import { Moon, Sun, Menu } from "lucide-react"
-import { useState } from "react"
+import { Moon, Sun, Menu, User, LogOut } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { usePathname } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
 
 export function Header() {
   const { theme, setTheme } = useTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const pathname = usePathname()
   const isHomePage = pathname === "/"
+  const { isAuthenticated, user, logout, isLoading } = useAuth()
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const scrollToSection = (sectionId: string) => {
     if (!isHomePage) {
@@ -56,12 +74,14 @@ export function Header() {
               className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">
               How It Works
             </button>
-            <Link href="/docs" className="text-sm font-medium hover:text-primary transition-colors">
+            <a 
+              href="https://github.com/Midnight-OS" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm font-medium hover:text-primary transition-colors"
+            >
               Documentation
-            </Link>
-            <Link href="/blog" className="text-sm font-medium hover:text-primary transition-colors">
-              Blog
-            </Link>
+            </a>
           </div>
 
           {/* Right Section */}
@@ -78,13 +98,61 @@ export function Header() {
               )}
             </button>
 
+            {/* Authentication Section */}
             <div className="hidden md:flex items-center gap-4">
-              <Link href="/login">
-                <button className="btn-ghost">Sign In</button>
-              </Link>
-              <Link href="/register">
-                <button className="btn-primary">Get Started</button>
-              </Link>
+              {isLoading ? (
+                <div className="w-8 h-8 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+              ) : isAuthenticated ? (
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-medium">{user?.name}</span>
+                  </button>
+                  
+                  {userMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg z-50"
+                    >
+                      <div className="p-2">
+                        <Link href="/dashboard">
+                          <button 
+                            className="w-full text-left px-3 py-2 rounded-md hover:bg-accent transition-colors"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            Dashboard
+                          </button>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            logout()
+                            setUserMenuOpen(false)
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-accent transition-colors flex items-center gap-2 text-red-600"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <button className="btn-ghost">Sign In</button>
+                  </Link>
+                  <Link href="/register">
+                    <button className="btn-primary">Get Started</button>
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -120,19 +188,57 @@ export function Header() {
                 className="text-sm font-medium hover:text-primary transition-colors text-left">
                 How It Works
               </button>
-              <Link href="/docs" className="text-sm font-medium hover:text-primary transition-colors">
+              <a 
+                href="https://github.com/Midnight-OS" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
                 Documentation
-              </Link>
-              <Link href="/blog" className="text-sm font-medium hover:text-primary transition-colors">
-                Blog
-              </Link>
-              <div className="flex gap-4 pt-4 border-t border-border">
-                <Link href="/login" className="flex-1">
-                  <button className="btn-ghost w-full">Sign In</button>
-                </Link>
-                <Link href="/register" className="flex-1">
-                  <button className="btn-primary w-full">Get Started</button>
-                </Link>
+              </a>
+              {/* Mobile Authentication */}
+              <div className="pt-4 border-t border-border">
+                {isLoading ? (
+                  <div className="flex justify-center">
+                    <div className="w-8 h-8 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+                  </div>
+                ) : isAuthenticated ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-2 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="font-medium">{user?.name}</span>
+                    </div>
+                    <Link href="/dashboard" className="block">
+                      <button 
+                        className="w-full btn-primary"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Dashboard
+                      </button>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout()
+                        setMobileMenuOpen(false)
+                      }}
+                      className="w-full btn-ghost flex items-center justify-center gap-2 text-red-600"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-4">
+                    <Link href="/login" className="flex-1">
+                      <button className="btn-ghost w-full">Sign In</button>
+                    </Link>
+                    <Link href="/register" className="flex-1">
+                      <button className="btn-primary w-full">Get Started</button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

@@ -10,6 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import toast from "react-hot-toast"
 import apiClient from "@/lib/api-client"
+import { useAuth } from "@/contexts/AuthContext"
+import { AuthRedirect } from "@/components/AuthRedirect"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,6 +24,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const { login } = useAuth()
   
   const {
     register,
@@ -35,6 +38,7 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       const response = await apiClient.login(data)
+      login(response.token, response.user)
       toast.success(`Welcome back, ${response.user.name}!`)
       router.push("/dashboard")
     } catch (error: any) {
@@ -45,12 +49,13 @@ export default function LoginPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="glass-card p-8"
-    >
+    <AuthRedirect>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="glass-card p-8"
+      >
       {/* Logo */}
       <div className="flex justify-center mb-8">
         <Link href="/" className="flex items-center gap-2">
@@ -176,6 +181,7 @@ export default function LoginPage() {
           Sign up
         </Link>
       </p>
-    </motion.div>
+      </motion.div>
+    </AuthRedirect>
   )
 }

@@ -101,7 +101,7 @@ export function Sidebar() {
   ]
 
   const bottomItems = [
-    { id: "help", label: "Documentation", href: "https://docs.midnight.network", icon: HelpCircle, external: true },
+    { id: "help", label: "Documentation", href: "https://github.com/Midnight-OS", icon: HelpCircle, external: true },
   ]
 
   return (

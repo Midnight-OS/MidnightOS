@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { QueryProvider } from '@/lib/query-client'
+import { AuthProvider } from '@/contexts/AuthContext'
 import { Toaster } from 'react-hot-toast'
 
 
@@ -19,17 +20,19 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <QueryProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <div className="relative min-h-screen">
-              {children}
-            </div>
-            <Toaster position="top-right" />
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <div className="relative min-h-screen">
+                {children}
+              </div>
+              <Toaster position="top-right" />
+            </ThemeProvider>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>

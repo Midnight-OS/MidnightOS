@@ -2,13 +2,11 @@
 
 ![MidnightOS Banner](docs/images/midnightos-banner.png)
 
-**Enterprise-grade AI bot deployment platform for the Midnight blockchain.**
+**Deploy AI bots on the Midnight blockchain with zero-knowledge privacy.**
 
-MidnightOS is a comprehensive platform for deploying and managing intelligent AI agents on the Midnight blockchain. Built with zero-knowledge privacy at its core, it enables organizations to automate treasury management, governance operations, and user interactions without compromising security or requiring blockchain development expertise.
+MidnightOS lets you build and manage AI agents that can automate treasury operations, handle governance, and interact with users—all powered by Midnight's zero-knowledge technology. No blockchain expertise required.
 
-## Overview
-
-MidnightOS provides a complete ecosystem for building, deploying, and managing blockchain-powered AI agents. The platform combines ElizaOS for intelligent conversation capabilities with Midnight's zero-knowledge infrastructure to deliver secure, private, and autonomous bot operations.
+The platform combines ElizaOS for conversational AI with Midnight's privacy-preserving infrastructure, giving you secure, autonomous bots that protect sensitive operations.
 
 ### Key Capabilities
 
