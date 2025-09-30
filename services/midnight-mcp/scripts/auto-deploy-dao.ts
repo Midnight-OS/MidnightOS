@@ -137,22 +137,58 @@ class AutoDeploymentManager {
       walletConfig
     );
     
-    // Wait for wallet to be ready
-    this.logger.info('Waiting for wallet to sync...');
+    // Wait for wallet to be ready and funds to arrive
+    this.logger.info('Waiting for wallet to sync and receive funds...');
+    this.logger.info('This may take 60-120 seconds for blockchain sync and fund confirmation');
+    
+    // Step 1: Wait for wallet to be synced
     let attempts = 0;
-    while (!this.walletService.isReady() && attempts < 30) {
+    const maxAttempts = 60; // 120 seconds total
+    while (!this.walletService.isReady() && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 2000));
       attempts++;
-      if (attempts % 5 === 0) {
+      if (attempts % 10 === 0) {
         this.logger.info(`Wallet sync in progress... (${attempts * 2}s elapsed)`);
       }
     }
     
     if (!this.walletService.isReady()) {
-      throw new Error('Wallet failed to sync after 60 seconds');
+      throw new Error(`Wallet failed to sync after ${maxAttempts * 2} seconds`);
     }
     
-    this.logger.info('Wallet service initialized and ready');
+    this.logger.info('Wallet synced, now waiting for funds to arrive...');
+    
+    // Step 2: Wait for wallet to actually have funds (balance > 0)
+    let fundAttempts = 0;
+    const maxFundAttempts = 30; // 60 seconds to wait for funds
+    let currentBalance = '0';
+    
+    while (fundAttempts < maxFundAttempts) {
+      try {
+        const balanceInfo = this.walletService.getBalance();
+        currentBalance = balanceInfo.balance;
+        
+        if (BigInt(currentBalance) > 0) {
+          this.logger.info(`✅ Funds received! Balance: ${currentBalance}`);
+          break;
+        }
+        
+        if (fundAttempts % 5 === 0 && fundAttempts > 0) {
+          this.logger.info(`Waiting for funds... (${fundAttempts * 2}s elapsed, balance still 0)`);
+        }
+      } catch (error) {
+        // Wallet might not be fully ready yet
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      fundAttempts++;
+    }
+    
+    if (BigInt(currentBalance) === BigInt(0)) {
+      throw new Error(`Wallet has no funds after ${maxFundAttempts * 2} seconds. Please ensure the wallet was funded before deployment.`);
+    }
+    
+    this.logger.info('Wallet service initialized and ready with sufficient funds');
   }
 
   private async initializeDeploymentService() {
