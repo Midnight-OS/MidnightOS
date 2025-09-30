@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, CheckCircle2, AlertCircle, Rocket, Shield, Database, Cpu, Link, Sparkles } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
+import apiClient from '@/lib/api-client'
 
 interface DeploymentStep {
   id: string
@@ -30,47 +31,47 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
     {
       id: 'init',
       label: 'Initializing Environment',
-      description: 'Setting up secure container workspace',
+      description: 'Setting up secure container workspace and generating wallet seed',
       icon: Rocket,
-      duration: 15,
+      duration: 5,
       status: 'pending'
     },
     {
       id: 'wallet',
-      label: 'Creating Wallet',
-      description: 'Generating cryptographic keys and wallet address',
+      label: 'Funding Wallet',
+      description: 'Transferring initial funds to your wallet',
       icon: Shield,
-      duration: 10,
+      duration: 15,
+      status: 'pending'
+    },
+    {
+      id: 'sync',
+      label: 'Syncing Blockchain',
+      description: 'Wallet is syncing with blockchain (this takes 60-120s on existing chains)',
+      icon: Database,
+      duration: 90,
       status: 'pending'
     },
     {
       id: 'contracts',
-      label: 'Deploying Smart Contracts',
-      description: 'Setting up DAO treasury and governance contracts',
+      label: 'Deploying DAO Contracts',
+      description: 'Deploying treasury and voting contracts to Midnight blockchain',
       icon: Database,
-      duration: 45,
+      duration: 60,
       status: 'pending'
     },
     {
       id: 'ai',
-      label: 'Configuring AI Agent',
-      description: 'Loading ElizaOS with your personalized settings',
+      label: 'Starting AI Agent',
+      description: 'Launching ElizaOS with Midnight MCP integration',
       icon: Cpu,
       duration: 20,
       status: 'pending'
     },
     {
-      id: 'connections',
-      label: 'Establishing Connections',
-      description: 'Connecting to Midnight blockchain and services',
-      icon: Link,
-      duration: 15,
-      status: 'pending'
-    },
-    {
       id: 'finalize',
-      label: 'Final Configuration',
-      description: 'Applying finishing touches and optimizations',
+      label: 'Final Checks',
+      description: 'Verifying all services are healthy and connected',
       icon: Sparkles,
       duration: 10,
       status: 'pending'
@@ -80,6 +81,37 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
   const [steps, setSteps] = useState(deploymentSteps)
   const totalDuration = steps.reduce((acc, step) => acc + step.duration, 0)
   const progress = Math.min((elapsedTime / totalDuration) * 100, 100)
+
+  // Poll deployment status
+  useEffect(() => {
+    if (!deploymentId) return
+    
+    const pollStatus = async () => {
+      try {
+        const response = await apiClient.getBotStatus(deploymentId) as any
+        
+        // Update based on actual status
+        if (response.status === 'active' || response.containers?.eliza?.status === 'running') {
+          // Deployment complete!
+          setDeploymentComplete(true)
+          const completedSteps = steps.map(step => ({ ...step, status: 'completed' as const }))
+          setSteps(completedSteps)
+          setTimeout(() => onComplete?.(), 2000)
+        } else if (response.status === 'failed' || response.status === 'error') {
+          setError(response.error || 'Deployment failed. Please try again.')
+        }
+      } catch (err: any) {
+        // If polling fails, continue with timer-based progress
+        console.warn('Failed to poll deployment status:', err)
+      }
+    }
+    
+    // Poll every 5 seconds
+    const statusInterval = setInterval(pollStatus, 5000)
+    pollStatus() // Initial poll
+    
+    return () => clearInterval(statusInterval)
+  }, [deploymentId, onComplete, steps])
 
   // Timer effect
   useEffect(() => {
@@ -139,16 +171,16 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
   }
 
   const funMessages = [
-    "Warming up the quantum processors...",
-    "Teaching your AI agent good manners...",
-    "Downloading more RAM (just kidding)...",
-    "Convincing the blockchain to accept your bot...",
-    "Sprinkling some magic dust...",
-    "Calibrating the flux capacitor...",
-    "Your bot is learning to speak blockchain...",
-    "Almost there, just need more coffee...",
-    "Building something amazing for you...",
-    "Your AI is graduating from bot school..."
+    "Syncing with Midnight blockchain...",
+    "Your wallet is catching up with the blockchain history...",
+    "Deploying zero-knowledge contracts (this is the cool part!)...",
+    "Your AI agent is learning the ways of the DAO...",
+    "Setting up secure, private treasury management...",
+    "Almost there! Just a bit more blockchain magic...",
+    "Your bot is connecting to the Midnight network...",
+    "This takes time because privacy is worth the wait...",
+    "Building your decentralized AI assistant...",
+    "Configuring zkProofs and shielded transactions..."
   ]
 
   const [currentMessage, setCurrentMessage] = useState(funMessages[0])
@@ -227,7 +259,12 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold mb-2">Deploying {botName}</h2>
-        <p className="text-muted-foreground">This usually takes about 2-3 minutes. Grab a coffee!</p>
+        <p className="text-muted-foreground mb-2">
+          This will take <strong>3-4 minutes</strong> for wallet sync and contract deployment.
+        </p>
+        <p className="text-sm text-muted-foreground/70">
+          Please keep this page open while we set everything up for you.
+        </p>
       </div>
 
       {/* Progress Section */}
