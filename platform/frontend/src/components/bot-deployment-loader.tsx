@@ -22,6 +22,8 @@ interface BotDeploymentLoaderProps {
 }
 
 export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDeploymentLoaderProps) {
+  console.log('BotDeploymentLoader mounted with props:', { botName, deploymentId })
+  
   const [elapsedTime, setElapsedTime] = useState(0)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [deploymentComplete, setDeploymentComplete] = useState(false)
@@ -94,8 +96,7 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
         if (response.status === 'active' || response.containers?.eliza?.status === 'running') {
           // Deployment complete!
           setDeploymentComplete(true)
-          const completedSteps = steps.map(step => ({ ...step, status: 'completed' as const }))
-          setSteps(completedSteps)
+          setSteps(prevSteps => prevSteps.map(step => ({ ...step, status: 'completed' as const })))
           setTimeout(() => onComplete?.(), 2000)
         } else if (response.status === 'failed' || response.status === 'error') {
           setError(response.error || 'Deployment failed. Please try again.')
@@ -111,7 +112,7 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
     pollStatus() // Initial poll
     
     return () => clearInterval(statusInterval)
-  }, [deploymentId, onComplete, steps])
+  }, [deploymentId, onComplete])
 
   // Timer effect
   useEffect(() => {
@@ -137,17 +138,19 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
         setCurrentStepIndex(i)
         
         // Update step statuses
-        const newSteps = [...steps]
-        newSteps.forEach((step, index) => {
-          if (index < i) {
-            step.status = 'completed'
-          } else if (index === i) {
-            step.status = 'active'
-          } else {
-            step.status = 'pending'
-          }
+        setSteps(prevSteps => {
+          const newSteps = [...prevSteps]
+          newSteps.forEach((step, index) => {
+            if (index < i) {
+              step.status = 'completed'
+            } else if (index === i) {
+              step.status = 'active'
+            } else {
+              step.status = 'pending'
+            }
+          })
+          return newSteps
         })
-        setSteps(newSteps)
         break
       }
     }
@@ -156,13 +159,12 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
     if (elapsedTime >= totalDuration && !deploymentComplete) {
       setDeploymentComplete(true)
       // Mark all steps as completed
-      const completedSteps = steps.map(step => ({ ...step, status: 'completed' as const }))
-      setSteps(completedSteps)
+      setSteps(prevSteps => prevSteps.map(step => ({ ...step, status: 'completed' as const })))
       setTimeout(() => {
         onComplete?.()
       }, 2000)
     }
-  }, [elapsedTime, totalDuration, deploymentComplete, steps, onComplete])
+  }, [elapsedTime, totalDuration, deploymentComplete, onComplete])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)

@@ -1,0 +1,27 @@
+{
+  "daoVotingContract": {
+    "contractAddress": "020063005f68752e7378d721c3afd117f4bdb65bdb67417762a28335c24a868dd5d5",
+    "contractType": "DaoVoting",
+    "deploymentTxId": "00000000948bcabd3073529a64f2c6a5b564aac58717002336b8cfe72a9ea18030d9af4e",
+    "deploymentBlock": 1388,
+    "deploymentTimestamp": "2025-09-30T08:30:49.169Z",
+    "zkConfigPath": "/Users/apple/dev/hackathon/DEGA/MidnightOS/services/midnight-mcp/src/integrations/dao/contract/managed/dao-voting/zkir"
+  },
+  "fundingTokenContract": {
+    "contractAddress": "0200b9090581c8a4e95dfcc6489a613f7bad04fa447cbb831339d1aa06019a17a497",
+    "contractType": "FundingShieldToken",
+    "deploymentTxId": "00000000978b524158d742e3bd1ab9b6e25e9016a943811023b433dfd319d01640360630",
+    "deploymentBlock": 1376,
+    "deploymentTimestamp": "2025-09-30T08:29:38.596Z",
+    "zkConfigPath": "/Users/apple/dev/hackathon/DEGA/MidnightOS/services/midnight-mcp/src/integrations/dao/contract/managed/funding-shield-token/zkir"
+  },
+  "voteTokenContract": {
+    "contractAddress": "020094e65fff9397425e136a28858585a4bc8110f30e81139431479c7d652b1e9cf5",
+    "contractType": "DaoShieldedToken",
+    "deploymentTxId": "000000000088622d87885cd20872ad001050a3daf0906427e9c703ce5c7a99e066a7c0b4",
+    "deploymentBlock": 1382,
+    "deploymentTimestamp": "2025-09-30T08:30:14.967Z",
+    "zkConfigPath": "/Users/apple/dev/hackathon/DEGA/MidnightOS/services/midnight-mcp/src/integrations/dao/contract/managed/dao-shielded-token/zkir"
+  },
+  "treasuryAddress": "020063005f68752e7378d721c3afd117f4bdb65bdb67417762a28335c24a868dd5d5"
+}
