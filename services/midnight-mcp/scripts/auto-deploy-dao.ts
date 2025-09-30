@@ -160,7 +160,7 @@ class AutoDeploymentManager {
     
     // Step 2: Wait for wallet to actually have funds (balance > 0)
     let fundAttempts = 0;
-    const maxFundAttempts = 30; // 60 seconds to wait for funds
+    const maxFundAttempts = 90; // 180 seconds (3 minutes) to wait for funds - increased for blockchain sync
     let currentBalance = '0';
     
     while (fundAttempts < maxFundAttempts) {
@@ -168,13 +168,18 @@ class AutoDeploymentManager {
         const balanceInfo = this.walletService.getBalance();
         currentBalance = balanceInfo.balance;
         
-        if (BigInt(currentBalance) > 0) {
+        // Balance might be a decimal string like "497.166285", convert to float for comparison
+        const balanceNum = parseFloat(currentBalance);
+        
+        if (balanceNum > 0) {
           this.logger.info(`✅ Funds received! Balance: ${currentBalance}`);
           break;
         }
         
         if (fundAttempts % 5 === 0 && fundAttempts > 0) {
-          this.logger.info(`Waiting for funds... (${fundAttempts * 2}s elapsed, balance still 0)`);
+          const syncStatus = await this.walletService.getSyncStatus();
+          this.logger.info(`Waiting for funds... (${fundAttempts * 2}s elapsed, balance: ${currentBalance})`);
+          this.logger.info(`Sync status: synced=${syncStatus.isSynced}, applyGap=${syncStatus.applyGap}, sourceGap=${syncStatus.sourceGap}`);
         }
       } catch (error) {
         // Wallet might not be fully ready yet
@@ -184,7 +189,8 @@ class AutoDeploymentManager {
       fundAttempts++;
     }
     
-    if (BigInt(currentBalance) === BigInt(0)) {
+    // Check if we have funds using float comparison
+    if (parseFloat(currentBalance) === 0) {
       throw new Error(`Wallet has no funds after ${maxFundAttempts * 2} seconds. Please ensure the wallet was funded before deployment.`);
     }
     
