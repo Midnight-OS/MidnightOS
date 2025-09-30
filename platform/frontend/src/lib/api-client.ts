@@ -61,17 +61,39 @@ class ApiClient {
     const fullUrl = `${API_BASE_URL}${endpoint}`;
     console.log('🔗 API Request:', { API_BASE_URL, endpoint, fullUrl });
 
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(fullUrl, {
+        ...options,
+        headers,
+        timeout: 30000, // 30 second timeout
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        
+        try {
+          const error = await response.json();
+          errorMessage = error.message || error.error || errorMessage;
+        } catch {
+          // If JSON parsing fails, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+
+        console.error('❌ API Error:', { status: response.status, message: errorMessage, endpoint });
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('✅ API Success:', { endpoint, data });
+      return data;
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('🌐 Network Error:', { endpoint, error: error.message });
+        throw new Error('Network error: Please check your connection');
+      }
+      console.error('❌ API Request Failed:', { endpoint, error });
+      throw error;
     }
-
-    return response.json();
   }
 
   setToken(token: string) {

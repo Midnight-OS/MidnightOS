@@ -1317,9 +1317,10 @@ app.post('/api/bots/:botId/chat', authenticate, async (req, res) => {
       });
     }
 
-    // Forward message to the bot's Eliza agent
-    const elizaPort = bot.elizaPort; // Use the actual Eliza port
-    const elizaUrl = `http://localhost:${elizaPort}/chat`;
+    // Forward message to the shared Eliza service using tenant ID
+    const sharedElizaUrl = process.env.SHARED_ELIZA_URL || 'http://localhost:3004';
+    const tenantId = bot.tenantId; // Use the bot's tenant ID for routing
+    const elizaUrl = `${sharedElizaUrl}/tenants/${tenantId}/chat`;
 
     try {
       const response = await fetch(elizaUrl, {

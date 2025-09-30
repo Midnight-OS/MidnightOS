@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Wifi, WifiOff } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import apiClient from '@/lib/api-client';
 
@@ -27,6 +27,7 @@ export function ChatInterface({ botId, botName, onSendMessage }: ChatInterfacePr
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
   const [sessionId, setSessionId] = useState<string>('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -87,21 +88,42 @@ export function ChatInterface({ botId, botName, onSendMessage }: ChatInterfacePr
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      setIsConnected(true); // Connection successful
 
       // Call optional callback
       if (onSendMessage) {
         onSendMessage(messageText);
       }
     } catch (error: any) {
+      console.error('💬 Chat Error:', error);
+      
+      // Set connection status based on error type
+      if (error.message.includes('Network error') || error.message.includes('fetch')) {
+        setIsConnected(false);
+      }
+
+      const errorMessage = error.message || 'Failed to send message';
+      
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to send message',
+        title: 'Message Failed',
+        description: errorMessage,
         variant: 'destructive',
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setInput(userMessage.content);
+              setMessages(prev => prev.filter(m => m.id !== userMessage.id));
+            }}
+          >
+            Retry
+          </Button>
+        ),
       });
       
       // Remove the user message if sending failed
       setMessages(prev => prev.filter(m => m.id !== userMessage.id));
-      setInput(userMessage.content);
     } finally {
       setIsLoading(false);
     }
@@ -117,9 +139,24 @@ export function ChatInterface({ botId, botName, onSendMessage }: ChatInterfacePr
   return (
     <Card className="h-[600px] flex flex-col">
       <CardHeader className="flex-none">
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5" />
-          Chat with {botName}
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            Chat with {botName}
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            {isConnected ? (
+              <div className="flex items-center gap-1 text-green-600">
+                <Wifi className="h-4 w-4" />
+                <span>Connected</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-red-600">
+                <WifiOff className="h-4 w-4" />
+                <span>Disconnected</span>
+              </div>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-0">
