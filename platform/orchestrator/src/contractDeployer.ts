@@ -68,8 +68,8 @@ export class PlatformContractDeployer {
           // Wait for the transaction to be confirmed and wallet to sync
           // Undeployed network: ~6 sec block time, need 2-3 blocks for confirmation
           // Plus wallet sync time
-          console.log('⏳ Waiting for funds to be confirmed and wallet to sync (30s)...');
-          await new Promise(resolve => setTimeout(resolve, 300000));
+          console.log('⏳ Waiting for funds to be confirmed and wallet to sync (1m)...');
+          await new Promise(resolve => setTimeout(resolve, 60000));
         }
       }
 

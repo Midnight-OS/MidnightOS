@@ -77,18 +77,10 @@ class AutoDeploymentManager {
   private async ensureSeed(): Promise<string> {
     const seedPath = path.join(__dirname, '..', `.storage/seeds/${this.config.agentId}/seed`);
     
-    // For Undeployed network, use genesis wallet for deployment
-    if (this.config.networkId === 'Undeployed') {
-      const genesisSeed = process.env.ADMIN_SEED || '0000000000000000000000000000000000000000000000000000000000000001';
-      this.logger.info('Using genesis wallet for Undeployed network deployment');
-      await fs.writeFile(seedPath, genesisSeed, { mode: 0o600 });
-      return genesisSeed;
-    }
-    
+    // Use provided seed phrase if available (from orchestrator)
     if (this.config.seedPhrase) {
-      // Use provided seed
       await fs.writeFile(seedPath, this.config.seedPhrase, { mode: 0o600 });
-      this.logger.info('Using provided seed phrase');
+      this.logger.info('Using provided seed phrase for wallet');
       return this.config.seedPhrase;
     }
     
