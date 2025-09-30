@@ -65,11 +65,11 @@ export class PlatformContractDeployer {
           console.log(`User wallet address: ${userAddress}`);
         } else {
           console.log('✅ User wallet funded successfully');
-          // Wait for the transaction to be confirmed and wallet to sync
-          // Undeployed network: ~6 sec block time, need 2-3 blocks for confirmation
-          // Plus wallet sync time
-          console.log('⏳ Waiting for funds to be confirmed and wallet to sync (1m)...');
-          await new Promise(resolve => setTimeout(resolve, 60000));
+          // Wait briefly for transaction to be broadcast to blockchain
+          // The auto-deploy script will handle waiting for wallet sync and fund confirmation
+          console.log('⏳ Giving transaction time to propagate (10s)...');
+          console.log('   (Auto-deploy will wait for full wallet sync and fund confirmation)');
+          await new Promise(resolve => setTimeout(resolve, 10000));
         }
       }
 
