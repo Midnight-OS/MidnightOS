@@ -1,6 +1,6 @@
 # MidnightOS
 
-![MidnightOS Banner](docs/images/midnightos-banner.png)
+![MidnightOS Banner](docs/images/midnightos-social.png)
 
 **Deploy AI bots on the Midnight blockchain with zero-knowledge privacy.**
 
