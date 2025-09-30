@@ -37,6 +37,8 @@ services:
       - WALLET_SERVER_PORT=3001
       - STORAGE_BASE_DIR=/app/.storage
       - PROOF_SERVER=http://proof-server:6300
+      - INDEXER_URL=http://indexer:8088
+      - NODE_URL=ws://midnight-node:9944
     ports:
       - "3001:3001"
     volumes:
@@ -45,7 +47,12 @@ services:
     networks:
       - midnightos-network
     depends_on:
-      - proof-server
+      midnight-node:
+        condition: service_healthy
+      indexer:
+        condition: service_started
+      proof-server:
+        condition: service_started
     restart: unless-stopped
 
   # Platform Frontend
@@ -91,15 +98,52 @@ services:
     volumes:
       - eliza-data:/app/data
 
+  # Midnight Node (Standalone local blockchain)
+  midnight-node:
+    image: 'midnightnetwork/midnight-node:0.12.0'
+    container_name: midnightos-node-standalone
+    ports:
+      - "9944:9944"
+    environment:
+      CFG_PRESET: "dev"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9944/health" ]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - midnightos-network
+    restart: unless-stopped
+
+  # Indexer (Required for wallet syncing)
+  indexer:
+    image: 'midnightntwrk/indexer-standalone:2.1.1'
+    container_name: midnightos-indexer-standalone
+    ports:
+      - "8088:8088"
+    environment:
+      RUST_LOG: "indexer=info,chain_indexer=info,indexer_api=info,wallet_indexer=info,indexer_common=info,fastrace_opentelemetry=off,info"
+      # Random 32-byte hex-encoded secret for standalone mode
+      APP__INFRA__SECRET: "303132333435363738393031323334353637383930313233343536373839303132"
+      APP__INFRA__NODE__URL: "ws://midnight-node:9944"
+    depends_on:
+      midnight-node:
+        condition: service_started
+    networks:
+      - midnightos-network
+    restart: unless-stopped
+
   # Proof Server (Required for Midnight Network)
   proof-server:
-    image: midnightnetwork/proof-server:latest
-    container_name: midnightos-proof-server
+    image: midnightnetwork/proof-server:4.0.0
+    container_name: midnightos-proof-server-standalone
     environment:
       - ROCKET_ADDRESS=0.0.0.0
       - ROCKET_PORT=6300
       - ROCKET_LOG_LEVEL=info
       - RUST_LOG=info
+      - RUST_BACKTRACE=full
     ports:
       - "6300:6300"
     volumes:
