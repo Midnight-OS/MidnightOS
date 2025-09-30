@@ -153,15 +153,21 @@ export default function OnboardingPage() {
         },
         platforms,
         tier: 'basic'
-      })
+      }) as any
 
-      // Store deployment ID and move to deployment step
-      setDeploymentId(response.bot?.id || `deploy-${Date.now()}`)
-      setCurrentStep(currentStep + 1) // Move to deploying step
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create bot")
-    } finally {
+      // Store deployment ID
+      const botId = response.bot?.id || response.id || `deploy-${Date.now()}`
+      setDeploymentId(botId)
+      
+      // Move to deployment step BEFORE setting isCreating to false
+      setCurrentStep(currentStep + 1)
       setIsCreating(false)
+      
+      toast.success('Bot creation started! Deploying to blockchain...')
+    } catch (error: any) {
+      setIsCreating(false)
+      toast.error(error.message || "Failed to create bot")
+      console.error('Bot creation error:', error)
     }
   }
 
