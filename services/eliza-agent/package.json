@@ -73,7 +73,7 @@
   "scripts": {
     "start": "elizaos start",
     "dev": "elizaos dev",
-    "start:server": "pnpm tsx src/eliza-server.ts",
+    "start:server": "PORT=3004 pnpm tsx src/eliza-server.ts",
     "build": "pnpm tsc --noEmit && pnpm vite build && pnpm tsup",
     "lint": "pnpm prettier --write ./src",
     "type-check": "pnpm tsc --noEmit",

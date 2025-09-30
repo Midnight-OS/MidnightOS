@@ -26,13 +26,7 @@ const authenticate = async (req: any, res: any, next: any) => {
     return res.status(401).json({ error: 'No token provided' });
   }
   
-  try {
-    // Support dev-token for development (only with explicit token)
-    if (token === 'dev-token' && process.env.NODE_ENV === 'development') {
-      req.user = { id: 'dev-user-123', email: 'dev@midnightos.ai' };
-      return next();
-    }
-    
+  try {  
     // Validate real token (even in development!)
     const user = await authService.verifyToken(token);
     req.user = user;
@@ -222,13 +216,13 @@ app.post('/api/bots', authenticate, async (req, res) => {
           await db.updateBot(bot.id, {
             tenantId: deploymentProgress.tenantId!,
             walletAddress: deploymentProgress.walletAddress!,
-            elizaPort: deploymentProgress.elizaPort!,
+            elizaPort: containerManager.getSharedElizaPort(), // All bots use shared port
             status: 'active'
           });
           console.log(`✅ Bot ${bot.id} (${bot.name}) deployment completed`);
           console.log(`   Tenant ID: ${deploymentProgress.tenantId}`);
           console.log(`   Wallet: ${deploymentProgress.walletAddress}`);
-          console.log(`   Port: ${deploymentProgress.elizaPort}`);
+          console.log(`   Shared Eliza Port: ${containerManager.getSharedElizaPort()}`);
         } catch (updateError) {
           console.error(`Failed to update bot ${bot.id}:`, updateError);
         }
@@ -496,7 +490,7 @@ app.post('/api/bots/:botId/stop', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
-    await containerManager.stopUserContainer(bot.tenantId);
+    await containerManager.stopUserBot(bot.tenantId);
     await db.updateBot(req.params.botId, { status: 'stopped' });
     
     res.json({ success: true });

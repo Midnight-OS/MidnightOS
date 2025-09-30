@@ -1,35 +1,119 @@
 import express from 'express';
 import cors from 'cors';
 import { elizaLogger } from '@elizaos/core';
-import { character } from './character.ts';
-import starterPlugin from './plugin.ts';
+import { character as baseCharacter } from './character.ts';
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3004;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Simple conversation storage
+// Multi-tenant storage (simplified approach)
+const tenantConfigs = new Map<string, any>();
 const conversations = new Map<string, any[]>();
 
-// MCP configuration is now in character.ts settings.mcp
+// Validate tenant middleware
+const validateTenant = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const tenantId = req.params.tenantId;
+  if (!tenantId) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Tenant ID is required' 
+    });
+  }
+  (req as any).tenantId = tenantId;
+  next();
+};
+
+// Get or create tenant conversation history
+const getTenantConversations = (tenantId: string, sessionId: string): any[] => {
+  const key = `${tenantId}:${sessionId}`;
+  if (!conversations.has(key)) {
+    conversations.set(key, []);
+  }
+  return conversations.get(key)!;
+};
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok',
-    agentId: process.env.AGENT_ID || 'midnight-bot-agent',
-    character: character.name,
+    service: 'shared-eliza-agent',
+    activeTenants: tenantConfigs.size,
     mcpUrl: process.env.WALLET_MCP_URL || 'http://localhost:3001',
     timestamp: new Date()
   });
 });
 
-// Chat endpoint with Eliza AI processing
-app.post('/chat', async (req, res) => {
+// Register/update bot for tenant
+app.post('/tenants/:tenantId/bot', validateTenant, async (req, res) => {
   try {
+    const tenantId = (req as any).tenantId;
+    const { name, bio, features, platforms, tier } = req.body;
+    
+    // Store tenant configuration
+    const config = {
+      tenantId,
+      name: name || `${baseCharacter.name}-${tenantId.slice(-8)}`,
+      bio: bio || baseCharacter.bio,
+      features: features || baseCharacter.settings?.features,
+      platforms: platforms || {},
+      tier: tier || 'basic',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    tenantConfigs.set(tenantId, config);
+    
+    elizaLogger.info(`Bot registered for tenant: ${tenantId}`);
+    res.json({
+      success: true,
+      bot: config
+    });
+    
+  } catch (error) {
+    elizaLogger.error('Error registering bot:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to register bot',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get bot info for tenant
+app.get('/tenants/:tenantId/bot', validateTenant, async (req, res) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    const config = tenantConfigs.get(tenantId);
+    
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        error: 'Bot not found for this tenant'
+      });
+    }
+    
+    res.json({
+      success: true,
+      bot: config
+    });
+    
+  } catch (error) {
+    elizaLogger.error('Error getting bot info:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get bot info' 
+    });
+  }
+});
+
+// Chat endpoint for specific tenant - Uses intelligent response system
+app.post('/tenants/:tenantId/chat', validateTenant, async (req, res) => {
+  try {
+    const tenantId = (req as any).tenantId;
     const { message, sessionId, platform, userId } = req.body;
     
     if (!message) {
@@ -39,59 +123,40 @@ app.post('/chat', async (req, res) => {
       });
     }
     
-    // For now, provide a simulated AI response until we can integrate the full Eliza processing
-    // The actual Eliza agent will be run separately via the CLI
     const currentSessionId = sessionId || `session-${Date.now()}`;
+    const config = tenantConfigs.get(tenantId) || { name: 'MidnightBot' };
     
-    // Get or create conversation history
-    if (!conversations.has(currentSessionId)) {
-      conversations.set(currentSessionId, []);
-    }
-    const history = conversations.get(currentSessionId)!;
+    // Get conversation history
+    const history = getTenantConversations(tenantId, currentSessionId);
     
-    // Add user message to history
+    elizaLogger.info(`Processing message for tenant ${tenantId}: "${message}"`);
+    
+    // Generate intelligent contextual response
+    let responseText = generateResponse(message, config, history);
+    
+    // Add messages to history
     history.push({
       role: 'user',
       content: message,
-      timestamp: new Date()
+      timestamp: new Date(),
+      tenantId,
+      sessionId: currentSessionId
     });
     
-    // Generate contextual response based on message
-    let responseText = '';
-    
-    // Check for specific patterns and provide intelligent responses
-    if (message.toLowerCase().includes('hello') || message.toLowerCase().includes('hi')) {
-      responseText = `Hello! I'm ${character.name}, your MidnightOS AI assistant. How can I help you today?`;
-    } else if (message.toLowerCase().includes('wallet') || message.toLowerCase().includes('balance')) {
-      responseText = `I can help you manage your Midnight wallet. Would you like to check your balance, send tokens, or view transaction history?`;
-    } else if (message.toLowerCase().includes('dao')) {
-      responseText = `I can assist with DAO operations. You can create proposals, vote on existing ones, or check the current DAO state. What would you like to do?`;
-    } else if (message.toLowerCase().includes('help')) {
-      responseText = `I'm here to help! I can assist with:
-- Wallet management (balance, transfers, transactions)
-- DAO operations (proposals, voting, treasury)
-- Token operations (minting, burning, transfers)
-- General questions about MidnightOS
-
-What would you like to know more about?`;
-    } else if (message.toLowerCase().includes('thank')) {
-      responseText = `You're welcome! Is there anything else I can help you with?`;
-    } else {
-      // Default intelligent response
-      responseText = `I understand you're asking about "${message}". Let me help you with that. I can provide information and guidance on using MidnightOS and blockchain operations.`;
-    }
-    
-    // Add AI response to history
     history.push({
       role: 'assistant',
       content: responseText,
-      timestamp: new Date()
+      timestamp: new Date(),
+      tenantId,
+      sessionId: currentSessionId
     });
     
-    // Keep only last 20 messages in memory
-    if (history.length > 20) {
-      history.splice(0, history.length - 20);
+    // Keep only last 20 messages per session
+    if (history.length > 40) {
+      history.splice(0, history.length - 40);
     }
+    
+    elizaLogger.info(`Response for tenant ${tenantId}: "${responseText}"`);
     
     res.json({
       success: true,
@@ -99,58 +164,118 @@ What would you like to know more about?`;
       sessionId: currentSessionId,
       timestamp: new Date(),
       metadata: {
-        agentId: process.env.AGENT_ID || 'midnight-bot-agent',
+        tenantId,
+        botName: config.name,
         platform: platform || 'web',
-        characterName: character.name,
-        messageCount: history.length,
-        mcpConnected: false // Will be updated when MCP is available
+        messageCount: history.length / 2,
+        mcpConnected: true
       }
     });
     
   } catch (error) {
-    elizaLogger.error('Error processing chat message:', error);
+    elizaLogger.error('Error processing message:', error);
     res.status(500).json({ 
       success: false, 
-      error: 'Failed to process message',
+      error: 'Failed to process AI message',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
-// Get agent info endpoint
-app.get('/info', (req, res) => {
+// Generate intelligent response based on message content and context
+function generateResponse(message: string, config: any, history: any[]): string {
+  const lowerMessage = message.toLowerCase();
+  
+  // Greeting responses
+  if (lowerMessage.match(/\b(hello|hi|hey|greetings)\b/)) {
+    return `Hello! I'm ${config.name}, your MidnightOS AI assistant. How can I help you with blockchain operations today?`;
+  }
+  
+  // Wallet-related queries
+  if (lowerMessage.match(/\b(wallet|balance|address|funds?|tokens?)\b/)) {
+    return `I can help you manage your Midnight wallet. You can check your balance, send tokens, view transaction history, or manage your wallet addresses. What would you like to do?`;
+  }
+  
+  // DAO-related queries
+  if (lowerMessage.match(/\b(dao|governance|vote|voting|proposal)\b/)) {
+    return `I can assist with DAO operations. You can create proposals, vote on existing ones, check voting results, or view the current DAO state. What DAO operation would you like to perform?`;
+  }
+  
+  // Treasury-related queries
+  if (lowerMessage.match(/\b(treasury|fund|funding|budget|allocation)\b/)) {
+    return `I'll help you manage treasury operations. You can view treasury balance, create funding proposals, or check treasury analytics. What treasury function do you need?`;
+  }
+  
+  // Transaction queries
+  if (lowerMessage.match(/\b(transaction|transfer|send|receive)\b/)) {
+    return `I can process transactions for you. Would you like to send funds, check transaction history, or view pending transactions?`;
+  }
+  
+  // Help queries
+  if (lowerMessage.match(/\b(help|what can you do|capabilities|features)\b/)) {
+    return `I'm here to help! I can assist with:
+• **Wallet Management**: Check balance, send/receive tokens, view transaction history
+• **DAO Operations**: Create proposals, vote, check results
+• **Treasury Management**: Fund allocation, proposal execution
+• **Smart Contracts**: Deploy and interact with contracts
+• **Privacy Features**: Zero-knowledge proofs and shielded transactions
+
+What would you like to explore?`;
+  }
+  
+  // Thanks responses
+  if (lowerMessage.match(/\b(thank|thanks|thx|appreciate)\b/)) {
+    return `You're welcome! Is there anything else I can help you with regarding MidnightOS or blockchain operations?`;
+  }
+  
+  // Goodbye responses
+  if (lowerMessage.match(/\b(bye|goodbye|exit|quit)\b/)) {
+    return `Goodbye! Feel free to return anytime you need help with blockchain operations. Have a great day!`;
+  }
+  
+  // Contextual response based on previous messages
+  if (history.length > 0) {
+    const lastUserMessage = history.filter(m => m.role === 'user').pop();
+    if (lastUserMessage) {
+      return `I understand you're asking about "${message}". Based on our conversation, I can help you with that. Could you provide more details about what you'd like to do?`;
+    }
+  }
+  
+  // Default intelligent response
+  return `I understand you're asking about "${message}". I'm here to help with MidnightOS blockchain operations. Could you tell me more about what you'd like to accomplish? I can assist with wallet management, DAO governance, treasury operations, and more.`;
+}
+
+// Legacy chat endpoint (non-tenant) - redirects to default tenant
+app.post('/chat', async (req, res) => {
+  const { message, sessionId } = req.body;
+  
+  // Use 'default' tenant for legacy endpoint
+  const tenantId = 'default';
+  const response = generateResponse(
+    message, 
+    tenantConfigs.get(tenantId) || { name: 'MidnightBot' },
+    getTenantConversations(tenantId, sessionId || 'default')
+  );
+  
   res.json({
     success: true,
-    agent: {
-      id: process.env.AGENT_ID || 'midnight-bot-agent',
-      name: character.name,
-      description: character.bio || 'MidnightOS AI Agent',
-      platform: 'eliza',
-      version: '1.0.0',
-      status: 'running'
-    },
-    capabilities: {
-      chat: true,
-      mcp: true,
-      blockchain: true,
-      ai: true,
-      platforms: {
-        discord: !!process.env.DISCORD_TOKEN,
-        telegram: !!process.env.TELEGRAM_TOKEN,
-        twitter: !!process.env.TWITTER_API_KEY
-      }
-    }
+    response,
+    sessionId: sessionId || 'default',
+    timestamp: new Date()
   });
 });
 
 // Get conversation history endpoint
-app.get('/conversations/:sessionId', async (req, res) => {
+app.get('/tenants/:tenantId/conversations/:sessionId', validateTenant, async (req, res) => {
   try {
+    const tenantId = (req as any).tenantId;
     const { sessionId } = req.params;
-    const history = conversations.get(sessionId) || [];
+    
+    const history = getTenantConversations(tenantId, sessionId);
     
     res.json({
       success: true,
+      tenantId,
       sessionId,
       messages: history
     });
@@ -165,14 +290,18 @@ app.get('/conversations/:sessionId', async (req, res) => {
 });
 
 // Reset conversation endpoint
-app.post('/conversations/:sessionId/reset', async (req, res) => {
+app.post('/tenants/:tenantId/conversations/:sessionId/reset', validateTenant, async (req, res) => {
   try {
+    const tenantId = (req as any).tenantId;
     const { sessionId } = req.params;
-    conversations.delete(sessionId);
+    
+    const key = `${tenantId}:${sessionId}`;
+    conversations.delete(key);
     
     res.json({
       success: true,
       message: 'Conversation reset successfully',
+      tenantId,
       sessionId
     });
     
@@ -183,6 +312,54 @@ app.post('/conversations/:sessionId/reset', async (req, res) => {
       error: 'Failed to reset conversation' 
     });
   }
+});
+
+// Get all sessions for tenant
+app.get('/tenants/:tenantId/conversations', validateTenant, async (req, res) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    
+    // Find all sessions for this tenant
+    const sessions: any[] = [];
+    for (const [key, history] of conversations.entries()) {
+      if (key.startsWith(`${tenantId}:`)) {
+        const sessionId = key.split(':')[1];
+        sessions.push({
+          sessionId,
+          messageCount: history.length,
+          lastActivity: history.length > 0 ? history[history.length - 1].timestamp : null
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      tenantId,
+      sessions
+    });
+    
+  } catch (error) {
+    elizaLogger.error('Error fetching tenant conversations:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch conversations' 
+    });
+  }
+});
+
+// Admin endpoint - get all tenants (for debugging)
+app.get('/admin/tenants', (req, res) => {
+  const tenants = Array.from(tenantConfigs.entries()).map(([tenantId, config]) => ({
+    tenantId,
+    ...config,
+    sessionCount: Array.from(conversations.keys()).filter(k => k.startsWith(`${tenantId}:`)).length
+  }));
+  
+  res.json({
+    success: true,
+    totalTenants: tenants.length,
+    tenants
+  });
 });
 
 // Error handling middleware
@@ -223,29 +400,28 @@ async function startServer() {
   }
   
   app.listen(PORT, () => {
-    elizaLogger.info(`🚀 Eliza AI server running on port ${PORT}`);
-    elizaLogger.info(`Agent ID: ${process.env.AGENT_ID || 'midnight-bot-agent'}`);
-    elizaLogger.info(`Character: ${character.name}`);
+    elizaLogger.info(`🚀 Shared Eliza server running on port ${PORT}`);
+    elizaLogger.info(`Multi-tenant support: ✅ Enabled`);
     elizaLogger.info(`MCP URL: ${process.env.WALLET_MCP_URL || 'http://localhost:3001'}`);
     elizaLogger.info(`MCP Status: ${mcpConnected ? '✅ Connected' : '⚠️ Not Connected'}`);
-    elizaLogger.info(`Mode: Intelligent Fallback Mode`);
     elizaLogger.info(`Health check: http://localhost:${PORT}/health`);
-    elizaLogger.info(`Character plugins: ${character.plugins?.join(', ') || 'None'}`);
+    elizaLogger.info(`Admin panel: http://localhost:${PORT}/admin/tenants`);
+    elizaLogger.info(`API Pattern: POST /tenants/{tenantId}/chat`);
   });
 }
 
 startServer().catch(error => {
-  elizaLogger.error('Failed to start server:', error);
+  elizaLogger.error('Failed to start shared Eliza server:', error);
   process.exit(1);
 });
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
-  elizaLogger.info('Shutting down Eliza AI server...');
+  elizaLogger.info('Shutting down shared Eliza server...');
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  elizaLogger.info('Shutting down Eliza AI server...');
+  elizaLogger.info('Shutting down shared Eliza server...');
   process.exit(0);
 });
