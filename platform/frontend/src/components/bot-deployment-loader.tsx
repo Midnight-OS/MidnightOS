@@ -84,17 +84,30 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
   const totalDuration = steps.reduce((acc, step) => acc + step.duration, 0)
   const progress = Math.min((elapsedTime / totalDuration) * 100, 100)
 
-  // Poll deployment status
+  // Poll deployment status (but don't block on it)
   useEffect(() => {
     if (!deploymentId) return
     
+    let pollCount = 0
+    const maxPolls = 20 // Stop polling after 100 seconds (20 * 5s)
+    
     const pollStatus = async () => {
+      pollCount++
+      
+      // Stop polling after max attempts
+      if (pollCount > maxPolls) {
+        console.log('Deployment polling timeout reached, continuing anyway')
+        return
+      }
+      
       try {
         const response = await apiClient.getBotStatus(deploymentId) as any
+        console.log(`Deployment poll #${pollCount}:`, response?.status)
         
         // Update based on actual status
         if (response.status === 'active' || response.containers?.eliza?.status === 'running') {
           // Deployment complete!
+          console.log('Bot deployment confirmed active!')
           setDeploymentComplete(true)
           setSteps(prevSteps => prevSteps.map(step => ({ ...step, status: 'completed' as const })))
           setTimeout(() => onComplete?.(), 2000)
@@ -155,12 +168,14 @@ export function BotDeploymentLoader({ botName, onComplete, deploymentId }: BotDe
       }
     }
 
-    // Check if deployment is complete
+    // Check if deployment animation is complete (don't wait for actual deployment)
     if (elapsedTime >= totalDuration && !deploymentComplete) {
+      console.log('Deployment animation complete, proceeding to dashboard')
       setDeploymentComplete(true)
       // Mark all steps as completed
       setSteps(prevSteps => prevSteps.map(step => ({ ...step, status: 'completed' as const })))
       setTimeout(() => {
+        console.log('Calling onComplete to move to next step')
         onComplete?.()
       }, 2000)
     }
