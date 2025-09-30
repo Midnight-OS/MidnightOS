@@ -111,7 +111,7 @@ export class TestnetRemoteConfig implements WalletConfig {
   
   constructor() {
     this.logDir = path.resolve('./logs', `${new Date().toISOString()}.log`);
-    setNetworkId(NetworkId.TestNet);
+    // Network ID will be set when WalletManager is initialized
   }
 }
 
@@ -230,8 +230,11 @@ export class WalletManager {
     this.logger.info('Initializing WalletManager with networkId: %s, walletFilename: %s, externalConfig: %s, agentId: %s', 
       networkId, walletFilename, externalConfig?.useExternalProofServer, this.agentId);
     this.config = externalConfig || new TestnetRemoteConfig();
+    // Always set the network ID from config or parameter
     if (networkId) {
       setNetworkId(networkId);
+    } else if (config.networkId) {
+      setNetworkId(config.networkId);
     }
     
     // Initialize logger
@@ -1696,16 +1699,19 @@ export class WalletManager {
 
   // ==================== DAO OPERATIONS ====================
 
+  // DAO METHODS - TEMPORARILY DISABLED
+  /*
   /**
    * Open a new election in the DAO voting contract
    * @param electionId Unique identifier for the election
    * @returns Transaction result
    */
   public async openDaoElection(electionId: string) {
-    if (!this.ready || !this.daoService) {
-      throw new Error('Wallet not ready or DAO service not initialized');
-    }
-    return await this.daoService.openDaoElection(electionId);
+    // if (!this.ready || !this.daoService) {
+    //   throw new Error('Wallet not ready or DAO service not initialized');
+    // }
+    // return await this.daoService.openDaoElection(electionId);
+    throw new Error('DAO functionality temporarily disabled');
   }
 
   /**
@@ -1713,10 +1719,11 @@ export class WalletManager {
    * @returns Transaction result
    */
   public async closeDaoElection() {
-    if (!this.ready || !this.daoService) {
-      throw new Error('Wallet not ready or DAO service not initialized');
-    }
-    return await this.daoService.closeDaoElection();
+    // if (!this.ready || !this.daoService) {
+    //   throw new Error('Wallet not ready or DAO service not initialized');
+    // }
+    // return await this.daoService.closeDaoElection();
+    throw new Error('DAO functionality temporarily disabled');
   }
 
   /**
@@ -1725,10 +1732,11 @@ export class WalletManager {
    * @returns Transaction result
    */
   public async castDaoVote(voteType: string) {
-    if (!this.ready || !this.daoService) {
-      throw new Error('Wallet not ready or DAO service not initialized');
-    }
-    return await this.daoService.castDaoVote(voteType);
+    // if (!this.ready || !this.daoService) {
+    //   throw new Error('Wallet not ready or DAO service not initialized');
+    // }
+    // return await this.daoService.castDaoVote(voteType);
+    throw new Error('DAO functionality temporarily disabled');
   }
 
   /**
@@ -1737,10 +1745,11 @@ export class WalletManager {
    * @returns Transaction result
    */
   public async fundDaoTreasury(amount: string) {
-    if (!this.ready || !this.daoService) {
-      throw new Error('Wallet not ready or DAO service not initialized');
-    }
-    return await this.daoService.fundDaoTreasury(amount);
+    // if (!this.ready || !this.daoService) {
+    //   throw new Error('Wallet not ready or DAO service not initialized');
+    // }
+    // return await this.daoService.fundDaoTreasury(amount);
+    throw new Error('DAO functionality temporarily disabled');
   }
 
   /**
@@ -1748,10 +1757,11 @@ export class WalletManager {
    * @returns Transaction result
    */
   public async payoutDaoProposal() {
-    if (!this.ready || !this.daoService) {
-      throw new Error('Wallet not ready or DAO service not initialized');
-    }
-    return await this.daoService.payoutDaoProposal();
+    // if (!this.ready || !this.daoService) {
+    //   throw new Error('Wallet not ready or DAO service not initialized');
+    // }
+    // return await this.daoService.payoutDaoProposal();
+    throw new Error('DAO functionality temporarily disabled');
   }
 
   /**
@@ -1759,10 +1769,11 @@ export class WalletManager {
    * @returns Election status
    */
   public async getDaoElectionStatus() {
-    if (!this.ready || !this.daoService) {
-      throw new Error('Wallet not ready or DAO service not initialized');
-    }
-    return await this.daoService.getDaoElectionStatus();
+    // if (!this.ready || !this.daoService) {
+    //   throw new Error('Wallet not ready or DAO service not initialized');
+    // }
+    // return await this.daoService.getDaoElectionStatus();
+    throw new Error('DAO functionality temporarily disabled');
   }
 
   /**
@@ -1770,10 +1781,11 @@ export class WalletManager {
    * @returns DAO state
    */
   public async getDaoState() {
-    if (!this.ready || !this.daoService) {
-      throw new Error('Wallet not ready or DAO service not initialized');
-    }
-    return await this.daoService.getDaoState();
+    // if (!this.ready || !this.daoService) {
+    //   throw new Error('Wallet not ready or DAO service not initialized');
+    // }
+    // return await this.daoService.getDaoState();
+    throw new Error('DAO functionality temporarily disabled');
   }
 
   /**
@@ -1781,8 +1793,9 @@ export class WalletManager {
    * @returns DAO configuration template
    */
   public getDaoConfigTemplate(): string {
-    const { getDaoEnvConfigTemplate } = require('./dao-config.js');
-    return getDaoEnvConfigTemplate();
+    // const { getDaoEnvConfigTemplate } = require('./dao-config.js');
+    // return getDaoEnvConfigTemplate();
+    return 'DAO functionality temporarily disabled';
   }
 
   /**

@@ -6,7 +6,7 @@ The MidnightOS platform is **already configured** to use Midnight's external pro
 
 ### Proof Server Details
 
-- **URL**: `https://rpc-proof-devnet.midnight.network:8443`
+- **URL**: `http://localhost:6300`
 - **Network**: TestNet (DevNet)
 - **Status**: ✅ ACTIVE & CONNECTED
 
@@ -24,7 +24,7 @@ The proof server is essential for Midnight blockchain operations because:
 ```env
 # Already configured in .env
 USE_EXTERNAL_PROOF_SERVER=true
-PROOF_SERVER=https://rpc-proof-devnet.midnight.network:8443
+PROOF_SERVER=http://localhost:6300
 ```
 
 ### How It Works
@@ -54,7 +54,7 @@ With the proof server configured, users can:
 
 All configured and working:
 
-- **Proof Server**: `https://rpc-proof-devnet.midnight.network:8443` ✅
+- **Proof Server**: `http://localhost:6300` ✅
 - **Indexer**: `https://indexer.devnet.midnight.network:443` ✅
 - **WebSocket**: `wss://indexer.devnet.midnight.network:443` ✅
 - **Node RPC**: `https://rpc-node-devnet.midnight.network` ✅
@@ -110,7 +110,7 @@ But the external server is:
 Current proof server status in your running MCP:
 
 ```
-[INFO] Using external proof server at https://rpc-proof-devnet.midnight.network:8443
+[INFO] Using external proof server at http://localhost:6300
 ```
 
 The proof server is fully operational and integrated!

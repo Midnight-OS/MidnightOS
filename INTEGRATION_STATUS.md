@@ -160,7 +160,7 @@ All endpoints require authentication (JWT token) except registration/login:
 NETWORK_ID=TestNet
 AGENT_ID=midnight-bot-001
 WALLET_FILENAME=midnight-wallet.dat
-PROOF_SERVER=https://rpc-proof-devnet.midnight.network:8443
+PROOF_SERVER=http://localhost:6300
 
 # Indexer Configuration
 INDEXER=https://indexer.testnet-02.midnight.network/api/v1/graphql

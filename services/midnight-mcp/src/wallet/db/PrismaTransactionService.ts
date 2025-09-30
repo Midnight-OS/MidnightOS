@@ -1,36 +1,56 @@
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { createLogger } from '../../logger/index.js';
-import { TransactionRecord, TransactionState } from '../../types/wallet.js';
+import { TransactionRecord, TransactionState, TransactionType } from '../../types/wallet.js';
 
 const prisma = new PrismaClient();
 
 export class PrismaTransactionService {
   private logger = createLogger('transaction-service');
 
+  /**
+   * Map database transaction to TransactionRecord
+   * Handles field name differences between orchestrator schema (status, from, to, hash) 
+   * and midnight-mcp interface (state, fromAddress, toAddress, txIdentifier)
+   */
+  private mapToTransactionRecord(tx: any): TransactionRecord {
+    return {
+      id: tx.id,
+      state: tx.status as TransactionState,  // DB uses 'status', interface uses 'state'
+      type: tx.type as TransactionType,
+      fromAddress: tx.from,  // DB uses 'from', interface uses 'fromAddress'
+      toAddress: tx.to,      // DB uses 'to', interface uses 'toAddress'
+      amount: tx.amount,
+      txIdentifier: tx.hash, // DB uses 'hash', interface uses 'txIdentifier'
+      errorMessage: tx.errorMessage,
+      metadata: tx.metadata ? JSON.parse(tx.metadata) : undefined,
+      createdAt: tx.createdAt.getTime(),
+      updatedAt: tx.updatedAt.getTime()
+    };
+  }
+
   async createTransaction(
     fromAddress: string,
     toAddress: string,
-    amount: string
+    amount: string,
+    type: TransactionType = TransactionType.TRANSFER,
+    metadata?: Record<string, any>
   ): Promise<TransactionRecord> {
     try {
       const transaction = await (prisma as any).transaction.create({
         data: {
           id: uuidv4(),
-          state: TransactionState.INITIATED,
-          fromAddress,
-          toAddress,
+          status: TransactionState.INITIATED,  // Use 'status' not 'state' to match schema
+          type,
+          from: fromAddress,  // Use 'from' not 'fromAddress' to match schema
+          to: toAddress,      // Use 'to' not 'toAddress' to match schema
           amount,
+          metadata: metadata ? JSON.stringify(metadata) : null,
         },
       });
 
-      this.logger.info(`Created transaction record: ${transaction.id}`);
-      return {
-        ...transaction,
-        state: transaction.state as TransactionState,
-        createdAt: transaction.createdAt.getTime(),
-        updatedAt: transaction.updatedAt.getTime()
-      } as TransactionRecord;
+      this.logger.info(`Created transaction record: ${transaction.id} (type: ${type})`);
+      return this.mapToTransactionRecord(transaction);
     } catch (error) {
       this.logger.error('Failed to create transaction record', error);
       throw error;
@@ -42,19 +62,14 @@ export class PrismaTransactionService {
       const transaction = await (prisma as any).transaction.update({
         where: { id },
         data: {
-          state: TransactionState.SENT,
-          txIdentifier,
+          status: TransactionState.SENT,  // Use 'status' not 'state'
+          hash: txIdentifier,              // Use 'hash' not 'txIdentifier'
           updatedAt: new Date(),
         },
       });
 
       this.logger.info(`Updated transaction ${id} to SENT with txIdentifier ${txIdentifier}`);
-      return {
-        ...transaction,
-        state: transaction.state as TransactionState,
-        createdAt: transaction.createdAt.getTime(),
-        updatedAt: transaction.updatedAt.getTime()
-      } as TransactionRecord;
+      return this.mapToTransactionRecord(transaction);
     } catch (error) {
       this.logger.error(`Failed to update transaction ${id} to SENT`, error);
       return null;
@@ -64,20 +79,15 @@ export class PrismaTransactionService {
   async markTransactionAsCompleted(txIdentifier: string): Promise<TransactionRecord | null> {
     try {
       const transaction = await (prisma as any).transaction.update({
-        where: { txIdentifier },
+        where: { hash: txIdentifier },  // Use 'hash' not 'txIdentifier'
         data: {
-          state: TransactionState.COMPLETED,
+          status: TransactionState.COMPLETED,  // Use 'status' not 'state'
           updatedAt: new Date(),
         },
       });
 
       this.logger.info(`Marked transaction with txIdentifier ${txIdentifier} as COMPLETED`);
-      return {
-        ...transaction,
-        state: transaction.state as TransactionState,
-        createdAt: transaction.createdAt.getTime(),
-        updatedAt: transaction.updatedAt.getTime()
-      } as TransactionRecord;
+      return this.mapToTransactionRecord(transaction);
     } catch (error) {
       this.logger.error(`Failed to mark transaction ${txIdentifier} as COMPLETED`, error);
       return null;
@@ -89,19 +99,14 @@ export class PrismaTransactionService {
       const transaction = await (prisma as any).transaction.update({
         where: { id },
         data: {
-          state: TransactionState.FAILED,
+          status: TransactionState.FAILED,  // Use 'status' not 'state'
           errorMessage,
           updatedAt: new Date(),
         },
       });
 
       this.logger.info(`Marked transaction ${id} as FAILED: ${errorMessage}`);
-      return {
-        ...transaction,
-        state: transaction.state as TransactionState,
-        createdAt: transaction.createdAt.getTime(),
-        updatedAt: transaction.updatedAt.getTime()
-      } as TransactionRecord;
+      return this.mapToTransactionRecord(transaction);
     } catch (error) {
       this.logger.error(`Failed to mark transaction ${id} as FAILED`, error);
       return null;
@@ -113,12 +118,7 @@ export class PrismaTransactionService {
       const transaction = await (prisma as any).transaction.findUnique({
         where: { id },
       });
-      return transaction ? {
-        ...transaction,
-        state: transaction.state as TransactionState,
-        createdAt: transaction.createdAt.getTime(),
-        updatedAt: transaction.updatedAt.getTime()
-      } as TransactionRecord : null;
+      return transaction ? this.mapToTransactionRecord(transaction) : null;
     } catch (error) {
       this.logger.error(`Failed to get transaction with ID: ${id}`, error);
       throw error;
@@ -128,14 +128,9 @@ export class PrismaTransactionService {
   async getTransactionByTxIdentifier(txIdentifier: string): Promise<TransactionRecord | null> {
     try {
       const transaction = await (prisma as any).transaction.findUnique({
-        where: { txIdentifier },
+        where: { hash: txIdentifier },  // Use 'hash' not 'txIdentifier'
       });
-      return transaction ? {
-        ...transaction,
-        state: transaction.state as TransactionState,
-        createdAt: transaction.createdAt.getTime(),
-        updatedAt: transaction.updatedAt.getTime()
-      } as TransactionRecord : null;
+      return transaction ? this.mapToTransactionRecord(transaction) : null;
     } catch (error) {
       this.logger.error(`Failed to get transaction with txIdentifier: ${txIdentifier}`, error);
       throw error;
@@ -145,15 +140,10 @@ export class PrismaTransactionService {
   async getTransactionsByState(state: TransactionState): Promise<TransactionRecord[]> {
     try {
       const transactions = await (prisma as any).transaction.findMany({
-        where: { state },
+        where: { status: state },  // Use 'status' not 'state'
         orderBy: { updatedAt: 'desc' },
       });
-      return transactions.map((tx: any) => ({
-        ...tx,
-        state: tx.state as TransactionState,
-        createdAt: tx.createdAt.getTime(),
-        updatedAt: tx.updatedAt.getTime()
-      })) as TransactionRecord[];
+      return transactions.map((tx: any) => this.mapToTransactionRecord(tx));
     } catch (error) {
       this.logger.error(`Failed to get transactions with state: ${state}`, error);
       throw error;
@@ -165,12 +155,7 @@ export class PrismaTransactionService {
       const transactions = await (prisma as any).transaction.findMany({
         orderBy: { updatedAt: 'desc' },
       });
-      return transactions.map((tx: any) => ({
-        ...tx,
-        state: tx.state as TransactionState,
-        createdAt: tx.createdAt.getTime(),
-        updatedAt: tx.updatedAt.getTime()
-      })) as TransactionRecord[];
+      return transactions.map((tx: any) => this.mapToTransactionRecord(tx));
     } catch (error) {
       this.logger.error('Failed to get all transactions', error);
       throw error;
@@ -182,18 +167,13 @@ export class PrismaTransactionService {
       const transactions = await (prisma as any).transaction.findMany({
         where: {
           OR: [
-            { state: TransactionState.INITIATED },
-            { state: TransactionState.SENT },
+            { status: TransactionState.INITIATED },  // Use 'status' not 'state'
+            { status: TransactionState.SENT },
           ],
         },
         orderBy: { updatedAt: 'desc' },
       });
-      return transactions.map((tx: any) => ({
-        ...tx,
-        state: tx.state as TransactionState,
-        createdAt: tx.createdAt.getTime(),
-        updatedAt: tx.updatedAt.getTime()
-      })) as TransactionRecord[];
+      return transactions.map((tx: any) => this.mapToTransactionRecord(tx));
     } catch (error) {
       this.logger.error('Failed to get pending transactions', error);
       throw error;

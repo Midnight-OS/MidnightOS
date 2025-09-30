@@ -1,0 +1,23 @@
+{
+  "name": "@midnightos/contracts",
+  "version": "1.0.0",
+  "description": "MidnightOS Smart Contracts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "npm run clean && npm run copy && npm run compile",
+    "clean": "rm -rf dist",
+    "copy": "mkdir -p dist && cp -r src/managed dist/",
+    "compile": "tsc --project tsconfig.build.json",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "^0.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.5",
+    "typescript": "^5.6.2",
+    "vitest": "^2.0.5"
+  }
+}

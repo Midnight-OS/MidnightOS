@@ -22,7 +22,12 @@
     "setup-agent": "pnpm tsx scripts/setup-agent.ts",
     "setup-docker": "pnpm tsx scripts/setup-docker.ts",
     "register-tokens": "pnpm tsx scripts/register-tokens.ts",
-    "auto-deploy": "pnpm tsx scripts/auto-deploy-dao.ts"
+    "auto-deploy": "pnpm tsx scripts/auto-deploy-dao.ts",
+    "get-address": "pnpm tsx scripts/get-address.ts",
+    "check-balance": "pnpm tsx scripts/admin-wallet-tools.ts balance",
+    "check-balance-sync": "pnpm tsx scripts/check-balance-sync.ts",
+    "send-funds": "pnpm tsx scripts/admin-wallet-tools.ts send",
+    "fund-genesis": "pnpm tsx scripts/fund-from-genesis.ts"
   },
   "dependencies": {
     "@elizaos/api-client": "^1.2.5",

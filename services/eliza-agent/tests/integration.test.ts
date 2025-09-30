@@ -33,7 +33,7 @@ describe('Eliza Agent Integration Tests', () => {
         AGENT_ID: testAgentId,
         NETWORK_ID: 'TestNet',
         USE_EXTERNAL_PROOF_SERVER: 'true',
-        PROOF_SERVER: 'https://rpc-proof-devnet.midnight.network:8443',
+        PROOF_SERVER: 'http://localhost:6300',
         INDEXER: 'https://indexer.devnet.midnight.network:443',
         INDEXER_WS: 'wss://indexer.devnet.midnight.network:443',
         MN_NODE: 'https://rpc-node-devnet.midnight.network',

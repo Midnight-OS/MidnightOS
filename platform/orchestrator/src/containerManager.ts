@@ -56,7 +56,9 @@ export class ContainerManager {
     if (config.tier === 'premium' || config.tier === 'enterprise' || config.features?.dao) {
       console.log(`Deploying DAO contracts for ${tenantId}...`);
       try {
-        contractAddresses = await this.contractDeployer.deployContractsForTenant(tenantId, 'TestNet');
+        // Use network ID from environment
+        const networkId = process.env.NETWORK_ID === 'Undeployed' ? 'Undeployed' : 'TestNet';
+        contractAddresses = await this.contractDeployer.deployContractsForTenant(tenantId, networkId as any);
         await this.contractDeployer.updateTenantEnvironment(tenantId);
         console.log(`DAO contracts deployed successfully for ${tenantId}`);
       } catch (error) {

@@ -28,15 +28,18 @@ model Token {
 model Transaction {
   id            String   @id @default(uuid())
   state         String   // INITIATED, SENT, COMPLETED, FAILED
+  type          String   @default("transfer") // TRANSFER, CONTRACT_DEPLOY, CONTRACT_CALL, DAO_VOTE, etc.
   fromAddress   String
   toAddress     String
   amount        String
   txIdentifier  String?  @unique
   errorMessage  String?
+  metadata      String?  // JSON string for additional transaction data
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
   @@index([state])
+  @@index([type])
   @@index([txIdentifier])
   @@index([fromAddress])
   @@index([toAddress])

@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  proof-server:
+    image: "midnightnetwork/proof-server:latest"
+    container_name: 'midnightos-proof-server-testnet'
+    ports:
+      - "6300:6300"
+    environment:
+      RUST_BACKTRACE: "full"
+      RUST_LOG: "info"
+    command: ["midnight-proof-server"]
+    restart: unless-stopped

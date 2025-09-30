@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "PORT=3002 pnpm tsx --watch src/api.ts",
     "build": "tsc",
+    "build:contracts": "cd contracts && npm run build",
+    "build:cli": "cd cli && npm run build",
+    "build:all": "npm run build:contracts && npm run build:cli && npm run build",
     "start": "node dist/api.js",
+    "testnet-remote": "cd cli && pnpm tsx src/testnet-remote.ts",
     "test": "pnpm jest",
     "test:watch": "pnpm jest --watch",
     "queries": "pnpm tsx src/queries.ts",

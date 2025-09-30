@@ -16,6 +16,7 @@ import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-j
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
+import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { type Logger } from 'pino';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -74,12 +75,21 @@ export class ContractDeploymentService {
     const proofProvider = httpClientProofProvider(this.config.proofServerUrl);
     
     const zkConfigProvider = await this.getZkConfigProvider();
+    
+    // Create private state provider for managing contract private state
+    const privateStateProvider = levelPrivateStateProvider({
+      privateStateStoreName: 'contract-deployment-private-state',
+    });
 
+    // The walletProvider should implement both WalletProvider and MidnightProvider interfaces
+    // The SDK's deployContract may look for submitTx on midnightProvider
     this.providers = {
       walletProvider,
+      midnightProvider: walletProvider, // Same object, has submitTx method
       publicDataProvider,
       proofProvider,
-      zkConfigProvider
+      zkConfigProvider,
+      privateStateProvider
     };
 
     this.logger.info('Contract Deployment Service initialized');
@@ -159,7 +169,20 @@ export class ContractDeploymentService {
     const fundingTokenBytes = this.encodeAddress(fundingTokenAddress);
     const voteTokenBytes = this.encodeAddress(voteTokenAddress);
     
-    const deployment = await deployContract(this.providers, {
+    // Create specific zkConfig provider for this contract
+    const zkConfigPath = path.resolve(
+      process.cwd(),
+      '../../../midnight-dao-contract/contracts/dist/managed/dao-voting'
+    );
+    const zkConfigProvider = new NodeZkConfigProvider(zkConfigPath);
+    
+    // Override the zkConfigProvider for this specific deployment
+    const providersWithSpecificZkConfig = {
+      ...this.providers,
+      zkConfigProvider
+    };
+    
+    const deployment = await deployContract(providersWithSpecificZkConfig, {
       contract,
       privateStateId: 'daoVotingPrivateState',
       initialPrivateState: {},
@@ -190,24 +213,46 @@ export class ContractDeploymentService {
     
     const contract = new FundingShieldToken.Contract(witnesses as any);
     
-    const deployment = await deployContract(this.providers, {
-      contract,
-      privateStateId: 'fundingTokenPrivateState',
-      initialPrivateState: {},
-      args: [new Uint8Array(32).fill(0)] // initNonce
-    });
-    
-    const info: DeployedContractInfo = {
-      contractAddress: deployment.deployTxData.public.contractAddress,
-      contractType: 'FundingShieldToken',
-      deploymentTxId: deployment.deployTxData.public.txId,
-      deploymentBlock: deployment.deployTxData.public.blockHeight,
-      deploymentTimestamp: new Date(),
-      zkConfigPath: this.getZkConfigPath('funding-shield-token')
-    };
-    
-    this.deployedContracts.set(info.contractAddress, info);
-    return info;
+    try {
+      // Create specific zkConfig provider for this contract
+      const zkConfigPath = path.resolve(
+        process.cwd(),
+        '../../../midnight-dao-contract/contracts/dist/managed/funding-shield-token'
+      );
+      const zkConfigProvider = new NodeZkConfigProvider(zkConfigPath);
+      
+      // Override the zkConfigProvider for this specific deployment
+      const providersWithSpecificZkConfig = {
+        ...this.providers,
+        zkConfigProvider
+      };
+      
+      const deployment = await deployContract(providersWithSpecificZkConfig, {
+        contract,
+        privateStateId: 'fundingTokenPrivateState',
+        initialPrivateState: {},
+        args: [new Uint8Array(32).fill(0)] // initNonce
+      });
+      
+      if (!deployment || !deployment.deployTxData || !deployment.deployTxData.public) {
+        throw new Error('Invalid deployment response - missing transaction data');
+      }
+      
+      const info: DeployedContractInfo = {
+        contractAddress: deployment.deployTxData.public.contractAddress,
+        contractType: 'FundingShieldToken',
+        deploymentTxId: deployment.deployTxData.public.txId,
+        deploymentBlock: deployment.deployTxData.public.blockHeight,
+        deploymentTimestamp: new Date(),
+        zkConfigPath: this.getZkConfigPath('funding-shield-token')
+      };
+      
+      this.deployedContracts.set(info.contractAddress, info);
+      return info;
+    } catch (error: any) {
+      this.logger.error('Failed to deploy FundingShieldToken:', error);
+      throw error;
+    }
   }
 
   /**
@@ -221,7 +266,20 @@ export class ContractDeploymentService {
     // Generate a random nonce for token initialization
     const initNonce = crypto.randomBytes(32);
     
-    const deployment = await deployContract(this.providers, {
+    // Create specific zkConfig provider for this contract
+    const zkConfigPath = path.resolve(
+      process.cwd(),
+      '../../../midnight-dao-contract/contracts/dist/managed/dao-shielded-token'
+    );
+    const zkConfigProvider = new NodeZkConfigProvider(zkConfigPath);
+    
+    // Override the zkConfigProvider for this specific deployment
+    const providersWithSpecificZkConfig = {
+      ...this.providers,
+      zkConfigProvider
+    };
+    
+    const deployment = await deployContract(providersWithSpecificZkConfig, {
       contract,
       privateStateId: 'daoVoteTokenPrivateState',
       initialPrivateState: {},
@@ -331,11 +389,13 @@ export class ContractDeploymentService {
    * Get ZK config provider for contracts
    */
   private async getZkConfigProvider(): Promise<any> {
-    // Use local contracts path in dao integration
+    // Point to the actual compiled contracts location
     const zkConfigBasePath = path.resolve(
       process.cwd(),
-      'src/integrations/dao/contract/managed'
+      '../../../midnight-dao-contract/contracts/dist/managed'
     );
+    
+    this.logger.info(`Using zkConfigBasePath: ${zkConfigBasePath}`);
     
     return new NodeZkConfigProvider(zkConfigBasePath);
   }
@@ -362,9 +422,21 @@ export class ContractDeploymentService {
    * Encode address to bytes for contract
    */
   private encodeAddress(address: string): Uint8Array {
-    // Remove 0x prefix if present
+    // Contract addresses in Midnight are already hex strings
+    // They should be exactly 32 bytes (64 hex characters)
     const cleanAddress = address.startsWith('0x') ? address.slice(2) : address;
-    return new Uint8Array(Buffer.from(cleanAddress, 'hex'));
+    const bytes = Buffer.from(cleanAddress, 'hex');
+    
+    // Ensure it's exactly 32 bytes
+    if (bytes.length !== 32) {
+      this.logger.warn(`Address ${address} is ${bytes.length} bytes, expected 32`);
+      // Pad or truncate to 32 bytes
+      const result = new Uint8Array(32);
+      result.set(bytes.slice(0, 32));
+      return result;
+    }
+    
+    return new Uint8Array(bytes);
   }
 
   /**

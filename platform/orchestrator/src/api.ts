@@ -4,6 +4,7 @@ import * as dotenv from 'dotenv';
 import { ContainerManager } from './containerManager';
 import { AuthService } from './auth';
 import { DatabaseService } from './database';
+import { adminWallet } from './adminWallet';
 
 // Load environment variables
 dotenv.config();
@@ -1350,6 +1351,87 @@ app.post('/api/bots/:botId/platforms/webchat/toggle', authenticate, async (req, 
 });
 
 /**
+ * Admin Wallet Management Endpoints
+ */
+
+/**
+ * Get admin wallet info (address, balance, etc.)
+ */
+app.get('/api/admin/wallet', authenticate, async (req, res) => {
+  try {
+    // Check if user is admin (you may want to add proper admin role checking)
+    if (req.user?.email !== process.env.ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const info = adminWallet.getInfo();
+    if (!info) {
+      return res.status(404).json({ error: 'Admin wallet not initialized' });
+    }
+
+    const balance = await adminWallet.getBalance();
+    
+    res.json({
+      ...info,
+      balance,
+      hasSufficientBalance: await adminWallet.hasSufficientBalance()
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Initialize admin wallet
+ */
+app.post('/api/admin/wallet/initialize', authenticate, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user?.email !== process.env.ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    await adminWallet.initialize();
+    const info = adminWallet.getInfo();
+    
+    res.json({
+      success: true,
+      message: 'Admin wallet initialized',
+      wallet: info
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Fund a user wallet manually
+ */
+app.post('/api/admin/wallet/fund', authenticate, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user?.email !== process.env.ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { address, amount } = req.body;
+    
+    if (!address || !address.startsWith('mn_')) {
+      return res.status(400).json({ error: 'Invalid Midnight address' });
+    }
+
+    const success = await adminWallet.fundUserWallet(address, amount);
+    
+    res.json({
+      success,
+      message: success ? 'Wallet funded successfully' : 'Failed to fund wallet'
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * Health check endpoint
  */
 app.get('/health', (req, res) => {
@@ -1373,13 +1455,16 @@ async function verifyPlatformServices(): Promise<void> {
   const proofHost = process.env.PROOF_HOST || (process.env.NODE_ENV === 'production' ? 'proof-server' : 'localhost');
   
   const services = [
-    { name: 'MCP', url: `http://${mcpHost}:3001/health`, critical: true },
+    { name: 'MCP', url: `http://${mcpHost}:3001/health`, critical: false },
     { name: 'Proof Server', url: `http://${proofHost}:6300/health`, critical: false }
   ];
   
   for (const service of services) {
     try {
-      const response = await fetch(service.url);
+      const response = await fetch(service.url, { 
+        // Add timeout to avoid hanging on connection
+        signal: AbortSignal.timeout(2000) 
+      });
       if (response.ok) {
         console.log(`✓ ${service.name} service is healthy`);
       } else {
@@ -1387,11 +1472,15 @@ async function verifyPlatformServices(): Promise<void> {
       }
     } catch (error) {
       if (service.critical) {
-        console.error(`✗ Critical service ${service.name} is not running. Please start platform services first.`);
-        console.error(`  Run: docker-compose -f docker/docker-compose.yml up -d`);
+        console.error(`✗ Critical service ${service.name} is not running. Please start it first.`);
+        if (service.name === 'MCP') {
+          console.error(`  Run: cd services/midnight-mcp && pnpm start`);
+        } else {
+          console.error(`  Check docker services: docker ps`);
+        }
         process.exit(1);
       } else {
-        console.warn(`⚠ Optional service ${service.name} is not available`);
+        console.warn(`⚠ ${service.name} service is not available (non-critical)`);
       }
     }
   }
@@ -1418,6 +1507,10 @@ async function start() {
     // Load existing containers on startup
     console.log('📋 Loading existing containers...');
     await containerManager.loadActiveContainers();
+    
+    // Initialize admin wallet
+    console.log('💰 Initializing admin wallet...');
+    await adminWallet.initialize();
     
     app.listen(PORT, () => {
       console.log(`✅ Platform API running on port ${PORT}`);

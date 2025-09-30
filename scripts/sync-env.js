@@ -164,9 +164,21 @@ const SERVICE_ENV_MAPPING = {
       SUPABASE_SERVICE_ROLE_KEY: rootEnv.SUPABASE_SERVICE_ROLE_KEY || '',
       JWT_SECRET: rootEnv.JWT_SECRET || 'change-this-in-production',
       NODE_ENV: rootEnv.NODE_ENV || 'development',
-      PORT: rootEnv.ORCHESTRATOR_PORT || '3002',
+      PORT: rootEnv.PORT || '3002',
       OPENAI_API_KEY: rootEnv.OPENAI_API_KEY || '',
       ANTHROPIC_API_KEY: rootEnv.ANTHROPIC_API_KEY || '',
+      ADMIN_SEED: rootEnv.ADMIN_SEED || '',
+      USER_FUNDING_AMOUNT: rootEnv.USER_FUNDING_AMOUNT || '500',
+      ENABLE_AUTO_FUNDING: rootEnv.ENABLE_AUTO_FUNDING || 'true',
+      ADMIN_ADDRESS: rootEnv.ADMIN_ADDRESS || '',
+      // Midnight Network Configuration
+      NETWORK_ID: rootEnv.NETWORK_ID || 'Undeployed',
+      USE_EXTERNAL_PROOF_SERVER: rootEnv.USE_EXTERNAL_PROOF_SERVER || 'true',
+      PROOF_SERVER: rootEnv.PROOF_SERVER || 'http://localhost:6300',
+      INDEXER: rootEnv.INDEXER || 'http://localhost:8088/api/v1/graphql',
+      INDEXER_WS: rootEnv.INDEXER_WS || 'ws://localhost:8088/api/v1/graphql/ws',
+      MN_NODE: rootEnv.MN_NODE || 'http://localhost:9944',
+      AGENT_ID: rootEnv.AGENT_ID || 'agent-001',
     })
   },
   
@@ -238,9 +250,14 @@ const SERVICE_ENV_MAPPING = {
       AGENT_ID: rootEnv.AGENT_ID || 'agent-001',
       USE_EXTERNAL_PROOF_SERVER: rootEnv.USE_EXTERNAL_PROOF_SERVER || 'true',
       PROOF_SERVER: rootEnv.PROOF_SERVER || 'http://localhost:6300',
-      INDEXER: rootEnv.INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
-      INDEXER_WS: rootEnv.INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
-      MN_NODE: rootEnv.MN_NODE || 'https://rpc.testnet-02.midnight.network',
+      INDEXER: rootEnv.INDEXER || 'http://localhost:8088/api/v1/graphql',
+      INDEXER_WS: rootEnv.INDEXER_WS || 'ws://localhost:8088/api/v1/graphql/ws',
+      MN_NODE: rootEnv.MN_NODE || 'http://localhost:9944',
+      ADMIN_SEED: rootEnv.ADMIN_SEED || '',
+      USER_FUNDING_AMOUNT: rootEnv.USER_FUNDING_AMOUNT || '500',
+      NETWORK_ID: rootEnv.NETWORK_ID || 'Undeployed',
+      ENABLE_AUTO_FUNDING: rootEnv.ENABLE_AUTO_FUNDING || 'true',
+      ADMIN_ADDRESS: rootEnv.ADMIN_ADDRESS || '',
     })
   },
   
@@ -264,12 +281,17 @@ const SERVICE_ENV_MAPPING = {
       ANTHROPIC_API_KEY: rootEnv.ANTHROPIC_API_KEY || '',
       
       // Midnight Network
-      NETWORK_ID: rootEnv.NETWORK_ID || 'TestNet',
+      NETWORK_ID: rootEnv.NETWORK_ID || 'Undeployed',
       USE_EXTERNAL_PROOF_SERVER: rootEnv.USE_EXTERNAL_PROOF_SERVER || 'true',
       PROOF_SERVER: rootEnv.PROOF_SERVER || 'http://localhost:6300',
-      INDEXER: rootEnv.INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
-      INDEXER_WS: rootEnv.INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
-      MN_NODE: rootEnv.MN_NODE || 'https://rpc.testnet-02.midnight.network',
+      INDEXER: rootEnv.INDEXER || 'http://localhost:8088/api/v1/graphql',
+      INDEXER_WS: rootEnv.INDEXER_WS || 'ws://localhost:8088/api/v1/graphql/ws',
+      MN_NODE: rootEnv.MN_NODE || 'http://localhost:9944',
+      ADMIN_SEED: rootEnv.ADMIN_SEED || '',
+      ADMIN_ADDRESS: rootEnv.ADMIN_ADDRESS || '',
+      USER_FUNDING_AMOUNT: rootEnv.USER_FUNDING_AMOUNT || '500',
+      ENABLE_AUTO_FUNDING: rootEnv.ENABLE_AUTO_FUNDING || 'true',
+      AGENT_ID: rootEnv.AGENT_ID || 'agent-001',
       
       // Supabase (optional)
       SUPABASE_URL: rootEnv.SUPABASE_URL || 'https://yuherkwaayoegfjhhjhz.supabase.co',

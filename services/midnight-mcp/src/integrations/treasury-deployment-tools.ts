@@ -88,7 +88,7 @@ export class ContractDeploymentToolHandlers {
       indexerUrl: process.env.INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
       indexerWsUrl: process.env.INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
       nodeUrl: process.env.MN_NODE || 'https://rpc.testnet-02.midnight.network',
-      proofServerUrl: process.env.PROOF_SERVER || 'https://rpc-proof-devnet.midnight.network:8443'
+      proofServerUrl: process.env.PROOF_SERVER || 'http://localhost:6300'
     };
 
     const logger = createLogger('contract-deployment');

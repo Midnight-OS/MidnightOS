@@ -8,6 +8,7 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { adminWallet } from './adminWallet';
 
 const execAsync = promisify(exec);
 
@@ -37,7 +38,8 @@ export class PlatformContractDeployer {
    */
   async deployContractsForTenant(
     tenantId: string,
-    networkId: 'TestNet' | 'MainNet' | 'DevNet' = 'TestNet'
+    networkId: 'TestNet' | 'MainNet' | 'DevNet' | 'Undeployed' = 'TestNet',
+    autoFund: boolean = true
   ): Promise<DeploymentResult> {
     console.log(`Deploying contracts for tenant ${tenantId}...`);
 
@@ -49,6 +51,27 @@ export class PlatformContractDeployer {
       const seedPath = path.join(this.basePath, tenantId, 'storage/seeds', tenantId, 'seed');
       await fs.mkdir(path.dirname(seedPath), { recursive: true });
       await fs.writeFile(seedPath, seed, { mode: 0o600 });
+
+      // Get user wallet address
+      const userAddress = await this.getWalletAddress(seed, networkId);
+      console.log(`Generated wallet address for ${tenantId}: ${userAddress}`);
+
+      // Auto-fund user wallet if enabled
+      if (autoFund && process.env.ENABLE_AUTO_FUNDING !== 'false') {
+        console.log('🚀 Auto-funding user wallet...');
+        const funded = await adminWallet.fundUserWallet(userAddress);
+        if (!funded) {
+          console.warn('⚠️ Auto-funding failed, user will need to manually fund wallet');
+          console.log(`User wallet address: ${userAddress}`);
+        } else {
+          console.log('✅ User wallet funded successfully');
+          // Wait for the transaction to be confirmed and wallet to sync
+          // Undeployed network: ~6 sec block time, need 2-3 blocks for confirmation
+          // Plus wallet sync time
+          console.log('⏳ Waiting for funds to be confirmed and wallet to sync (30s)...');
+          await new Promise(resolve => setTimeout(resolve, 300000));
+        }
+      }
 
       // Run auto-deploy script
       const command = `cd ${this.mcpServicePath} && bun run auto-deploy -a ${tenantId} -n ${networkId} -s ${seed}`;
@@ -173,14 +196,41 @@ export class PlatformContractDeployer {
     return crypto.randomBytes(32).toString('hex');
   }
 
+  private async getWalletAddress(seed: string, networkId: string): Promise<string> {
+    try {
+      // Get address using MCP service script
+      const command = `cd ${this.mcpServicePath} && bun run get-address --seed "${seed}" --network "${networkId}"`;
+      const { stdout, stderr } = await execAsync(command);
+      
+      if (stderr && !stderr.includes('warning')) {
+        console.error('get-address stderr:', stderr);
+      }
+      
+      const addressMatch = stdout.match(/Address:\s*(mn_[^\s]+)/i);
+      
+      if (addressMatch) {
+        return addressMatch[1];
+      }
+      
+      throw new Error(`Failed to parse wallet address from output: ${stdout}`);
+    } catch (error) {
+      console.error('Failed to get wallet address:', error);
+      throw new Error(
+        `Cannot derive wallet address for tenant. Please ensure the get-address script exists at ${this.mcpServicePath}/scripts/get-address.ts`
+      );
+    }
+  }
+
   private getProofServer(networkId: string): string {
     switch (networkId) {
       case 'TestNet':
-        return 'https://rpc-proof-devnet.midnight.network:8443';
+        return process.env.PROOF_SERVER || 'http://localhost:6300';
+      case 'Undeployed':
+        return process.env.PROOF_SERVER || 'http://localhost:6300';
       case 'MainNet':
         return 'https://rpc-proof-mainnet.midnight.network:8443';
       default:
-        return 'http://localhost:8443';
+        return process.env.PROOF_SERVER || 'http://localhost:6300';
     }
   }
 
@@ -188,10 +238,12 @@ export class PlatformContractDeployer {
     switch (networkId) {
       case 'TestNet':
         return 'https://indexer.testnet-02.midnight.network/api/v1/graphql';
+      case 'Undeployed':
+        return process.env.INDEXER || 'http://localhost:8088/api/v1/graphql';
       case 'MainNet':
         return 'https://indexer.mainnet.midnight.network/api/v1/graphql';
       default:
-        return 'http://localhost:8080/api/v1/graphql';
+        return process.env.INDEXER || 'http://localhost:8088/api/v1/graphql';
     }
   }
 
@@ -199,10 +251,12 @@ export class PlatformContractDeployer {
     switch (networkId) {
       case 'TestNet':
         return 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws';
+      case 'Undeployed':
+        return process.env.INDEXER_WS || 'ws://localhost:8088/api/v1/graphql/ws';
       case 'MainNet':
         return 'wss://indexer.mainnet.midnight.network/api/v1/graphql/ws';
       default:
-        return 'ws://localhost:8080/api/v1/graphql/ws';
+        return process.env.INDEXER_WS || 'ws://localhost:8088/api/v1/graphql/ws';
     }
   }
 
@@ -210,10 +264,12 @@ export class PlatformContractDeployer {
     switch (networkId) {
       case 'TestNet':
         return 'https://rpc.testnet-02.midnight.network';
+      case 'Undeployed':
+        return process.env.MN_NODE || 'http://localhost:9944';
       case 'MainNet':
         return 'https://rpc.mainnet.midnight.network';
       default:
-        return 'http://localhost:3000';
+        return process.env.MN_NODE || 'http://localhost:9944';
     }
   }
 

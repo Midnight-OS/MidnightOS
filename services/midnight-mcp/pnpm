@@ -1,0 +1,85 @@
+Starting balance check with full sync...
+This may take a minute while the wallet syncs with the blockchain...
+
+Initializing wallet and checking balance...
+Waiting for wallet initialization...
+[2025-09-30 00:12:42.847 +0100] [33mWARN[39m (dao-service): [36mNo DAO configuration found in environment variables[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.798 +0100] [32mINFO[39m (wallet-manager): [36mInitializing WalletManager with networkId: TestNet, walletFilename: admin-wallet-sync-check, externalConfig: true, agentId: agent-001[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.798 +0100] [32mINFO[39m (wallet-manager): [36mInitializing WalletManager[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.800 +0100] [32mINFO[39m (wallet-manager): [36mTransaction database service initialized[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.800 +0100] [32mINFO[39m (wallet-manager): [36mUsing external proof server at http://localhost:6300[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.801 +0100] [32mINFO[39m (wallet-manager): [36mUsing external proof server at http://localhost:6300[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.801 +0100] [32mINFO[39m (wallet-manager): [36mAttempting to restore wallet from admin-wallet-sync-check.json[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.801 +0100] [32mINFO[39m (wallet-manager): [36mRestoring wallet with seed: b4d040c5080f0f123b9cb879fedf9f513eb9f50292380c7f0897c94a5ee79b94[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.847 +0100] [32mINFO[39m (wallet-manager): [36mWallet restored from file and started[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.848 +0100] [32mINFO[39m (wallet-manager): [36mWallet initialized successfully, syncing in progress[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.848 +0100] [32mINFO[39m (wallet-manager): [36mWallet initialization sequence completed[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.913 +0100] [32mINFO[39m (wallet-manager): [36mWallet is ready for operations![39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.913 +0100] [32mINFO[39m (wallet-manager): [36mWallet address: mn_shield-addr_test1l4cwlsz35s4p085kt7h9p0vjdpkp7jsuu90h34vh07kv9uhy237sxq9r7qtwhke8dxmfxhj2u65lmudkl7atterwh7ceqqlklrvmedztzgmp82ry[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.913 +0100] [32mINFO[39m (wallet-manager): [36mWallet balance: 0[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.913 +0100] [32mINFO[39m (wallet-manager): [36mSync status - isSynced: false, applyGap: 0, sourceGap: 0[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.913 +0100] [32mINFO[39m (wallet-manager): [36mSaving wallet to file admin-wallet-sync-check.json for agent agent-001[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.921 +0100] [32mINFO[39m (wallet-manager): [36mWallet saved to /Users/apple/dev/hackathon/DEGA/MidnightOS/services/midnight-mcp/.storage/wallet-backups/agent-001/admin-wallet-sync-check.json[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.798 +0100] [32mINFO[39m (shielded-token-manager): [36mShieldedTokenManager initialized with database persistence[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+[2025-09-30 00:12:42.795 +0100] [32mINFO[39m (token-registry-db): [36mToken registry database initialized successfully[39m
+    application: "midnight-mcp"
+    environment: "development"
+    version: "0.0.1"
+
+Wallet Address:
+mn_shield-addr_test1l4cwlsz35s4p085kt7h9p0vjdpkp7jsuu90h34vh07kv9uhy237sxq9r7qtwhke8dxmfxhj2u65lmudkl7atterwh7ceqqlklrvmedztzgmp82ry
+

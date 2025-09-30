@@ -68,17 +68,20 @@ model ApiKey {
 
 model Transaction {
   id        String   @id @default(uuid())
-  botId     String
+  botId     String?  // Optional - allows transactions from midnight-mcp service without bot context
   type      String
   amount    String
   from      String?
   to        String?
   status    String   @default("pending")
   hash      String?
+  metadata  String?  // JSON string for additional transaction data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  bot Bot @relation(fields: [botId], references: [id])
+  bot Bot? @relation(fields: [botId], references: [id])
+  
+  @@index([type])
 }
 
 model Activity {

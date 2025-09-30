@@ -19,11 +19,6 @@ services:
     networks:
       - midnightos-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Midnight MCP Service
   midnight-mcp:
@@ -52,11 +47,6 @@ services:
     depends_on:
       - proof-server
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Platform Frontend
   frontend:
@@ -78,11 +68,6 @@ services:
     networks:
       - midnightos-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3003/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # ElizaOS Agent (Default instance)
   eliza-agent:
@@ -105,11 +90,6 @@ services:
     restart: unless-stopped
     volumes:
       - eliza-data:/app/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Proof Server (Required for Midnight Network)
   proof-server:

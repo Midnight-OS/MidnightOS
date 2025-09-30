@@ -1,0 +1,7 @@
+{
+  "seed": "0000000000000000000000000000000000000000000000000000000000000001",
+  "address": "mn_shield-addr_undeployed1mjngjmnlutcq50trhcsk3hugvt9wyjnhq3c7prryd5nqmvtzva0sxqpvzkdy4k9u7eyffff53cge62tqylevq3wqps86tdjuahsquwvucsy9kffv",
+  "networkId": "Undeployed",
+  "minimumBalance": "1000000",
+  "fundingAmount": "500"
+}

@@ -23,7 +23,7 @@ config();
 
 interface DeploymentConfig {
   agentId: string;
-  networkId: 'TestNet' | 'MainNet' | 'DevNet';
+  networkId: 'TestNet' | 'MainNet' | 'DevNet' | 'Undeployed';
   seedPhrase?: string;
   autoFund?: boolean;
   fundAmount?: bigint;
@@ -77,6 +77,14 @@ class AutoDeploymentManager {
   private async ensureSeed(): Promise<string> {
     const seedPath = path.join(__dirname, '..', `.storage/seeds/${this.config.agentId}/seed`);
     
+    // For Undeployed network, use genesis wallet for deployment
+    if (this.config.networkId === 'Undeployed') {
+      const genesisSeed = process.env.ADMIN_SEED || '0000000000000000000000000000000000000000000000000000000000000001';
+      this.logger.info('Using genesis wallet for Undeployed network deployment');
+      await fs.writeFile(seedPath, genesisSeed, { mode: 0o600 });
+      return genesisSeed;
+    }
+    
     if (this.config.seedPhrase) {
       // Use provided seed
       await fs.writeFile(seedPath, this.config.seedPhrase, { mode: 0o600 });
@@ -107,6 +115,8 @@ class AutoDeploymentManager {
       ? NetworkId.MainNet 
       : this.config.networkId === 'DevNet' 
       ? NetworkId.DevNet 
+      : this.config.networkId === 'Undeployed'
+      ? NetworkId.Undeployed
       : NetworkId.TestNet;
     
     // Create wallet config for external proof server
@@ -116,6 +126,11 @@ class AutoDeploymentManager {
       walletConfig.indexerWS = process.env.INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws';
       walletConfig.node = process.env.MN_NODE || 'https://rpc.testnet-02.midnight.network';
       // Use local proof server or environment variable
+      walletConfig.proofServer = process.env.PROOF_SERVER || 'http://localhost:6300';
+    } else if (this.config.networkId === 'Undeployed') {
+      walletConfig.indexer = process.env.INDEXER || 'http://localhost:8088/api/v1/graphql';
+      walletConfig.indexerWS = process.env.INDEXER_WS || 'ws://localhost:8088/api/v1/graphql/ws';
+      walletConfig.node = process.env.MN_NODE || 'http://localhost:9944';
       walletConfig.proofServer = process.env.PROOF_SERVER || 'http://localhost:6300';
     }
     
@@ -156,10 +171,15 @@ class AutoDeploymentManager {
     
     // Set network endpoints based on networkId
     if (this.config.networkId === 'TestNet') {
-      process.env.PROOF_SERVER = 'https://rpc-proof-devnet.midnight.network:8443';
+      process.env.PROOF_SERVER = 'http://localhost:6300';
       process.env.INDEXER = 'https://indexer.testnet-02.midnight.network/api/v1/graphql';
       process.env.INDEXER_WS = 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws';
       process.env.MN_NODE = 'https://rpc.testnet-02.midnight.network';
+    } else if (this.config.networkId === 'Undeployed') {
+      process.env.PROOF_SERVER = 'http://localhost:6300';
+      process.env.INDEXER = 'http://localhost:8088/api/v1/graphql';
+      process.env.INDEXER_WS = 'ws://localhost:8088/api/v1/graphql/ws';
+      process.env.MN_NODE = 'http://localhost:9944';
     }
     
     // Initialize deployment service with config
@@ -168,7 +188,7 @@ class AutoDeploymentManager {
       indexerUrl: process.env.INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
       indexerWsUrl: process.env.INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
       nodeUrl: process.env.MN_NODE || 'https://rpc.testnet-02.midnight.network',
-      proofServerUrl: process.env.PROOF_SERVER || 'https://rpc-proof-devnet.midnight.network:8443'
+      proofServerUrl: process.env.PROOF_SERVER || 'http://localhost:6300'
     };
     
     this.deploymentService = new ContractDeploymentService(this.logger, deploymentConfig);
@@ -281,7 +301,7 @@ async function main() {
   // Parse command line arguments
   const config: DeploymentConfig = {
     agentId: process.env.AGENT_ID || 'auto-deploy-' + Date.now(),
-    networkId: 'TestNet',
+    networkId: (process.env.NETWORK_ID || 'TestNet') as any,
     autoFund: false
   };
   
@@ -313,7 +333,7 @@ Usage: bun run auto-deploy [options]
 
 Options:
   -a, --agent-id <id>     Agent ID (default: auto-deploy-timestamp)
-  -n, --network <network>  Network: TestNet, MainNet, DevNet (default: TestNet)
+  -n, --network <network>  Network: TestNet, MainNet, DevNet, Undeployed (default: from env or TestNet)
   -s, --seed <seed>       64-char hex seed (optional, will generate if not provided)
   -f, --fund <amount>     Auto-fund treasury with amount (optional)
   -h, --help             Show help

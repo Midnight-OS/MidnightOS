@@ -82,11 +82,26 @@ export enum TransactionState {
 }
 
 /**
+ * Transaction type enum for different kinds of transactions
+ */
+export enum TransactionType {
+  TRANSFER = 'transfer',              // Simple token transfer
+  CONTRACT_DEPLOY = 'contract_deploy', // Contract deployment
+  CONTRACT_CALL = 'contract_call',     // Contract function call
+  DAO_VOTE = 'dao_vote',              // DAO voting transaction
+  DAO_PROPOSAL = 'dao_proposal',      // DAO proposal creation
+  TOKEN_MINT = 'token_mint',          // Token minting
+  TOKEN_BURN = 'token_burn',          // Token burning
+  MARKETPLACE = 'marketplace'         // Marketplace operation
+}
+
+/**
  * Transaction record for storing in the database
  */
 export interface TransactionRecord {
   id: string;                    // UUID for the transaction
   state: TransactionState;       // Current state of the transaction
+  type: TransactionType;         // Type of transaction
   fromAddress: string;           // Sender address
   toAddress: string;             // Recipient address
   amount: string;                // Amount in dust format
@@ -94,6 +109,7 @@ export interface TransactionRecord {
   createdAt: number;             // Timestamp of creation
   updatedAt: number;             // Timestamp of last update
   errorMessage?: string;         // Error message if transaction failed
+  metadata?: Record<string, any>; // Optional metadata (contract address, proposal ID, etc.)
 }
 
 /**
