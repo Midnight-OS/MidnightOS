@@ -1,594 +1,229 @@
 # MidnightOS
 
-![MidnightOS Banner](./docs/images/midnightos-banner.png)
+![MidnightOS Banner](docs/images/midnightos-banner.png)
 
-## Reimagine DAO Treasury Management with AI
+**Enterprise-grade AI bot deployment platform for the Midnight blockchain.**
 
-MidnightOS is an advanced AI-powered platform for decentralized autonomous organization (DAO) treasury management, built on the Midnight blockchain with zero-knowledge proof capabilities. The platform combines ElizaOS artificial intelligence framework with blockchain operations to provide automated, secure, and privacy-preserving treasury management solutions.
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Key Features](#key-features)
-- [Technology Stack](#technology-stack)
-- [System Requirements](#system-requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Services](#services)
-- [Development](#development)
-- [API Documentation](#api-documentation)
-- [Deployment](#deployment)
-- [Security](#security)
-- [Contributing](#contributing)
-- [License](#license)
+MidnightOS is a comprehensive platform for deploying and managing intelligent AI agents on the Midnight blockchain. Built with zero-knowledge privacy at its core, it enables organizations to automate treasury management, governance operations, and user interactions without compromising security or requiring blockchain development expertise.
 
 ## Overview
 
-MidnightOS revolutionizes how DAOs manage their treasuries by integrating artificial intelligence with blockchain technology. The platform enables organizations to automate complex financial operations, governance processes, and treasury management tasks through natural language interactions with AI agents.
+MidnightOS provides a complete ecosystem for building, deploying, and managing blockchain-powered AI agents. The platform combines ElizaOS for intelligent conversation capabilities with Midnight's zero-knowledge infrastructure to deliver secure, private, and autonomous bot operations.
 
-### Core Capabilities
+### Key Capabilities
 
-- **AI-Driven Treasury Management**: Automated proposal creation, fund allocation, and financial decision-making
-- **Zero-Knowledge Proof Integration**: Privacy-preserving transactions and shielded operations on Midnight blockchain
-- **Multi-Agent Architecture**: Deploy multiple specialized AI agents for different organizational roles
-- **Real-Time Blockchain Operations**: Execute transactions, deploy contracts, and manage wallets through conversational AI
-- **Decentralized Governance**: Automated voting, proposal management, and treasury fund distribution
+- **Multi-Tenant Architecture** - Single shared infrastructure serving unlimited bot deployments
+- **Zero-Knowledge Privacy** - Built on Midnight's ZK technology for confidential operations
+- **Treasury Automation** - Autonomous DAO treasury management with governance integration
+- **Multi-Platform Support** - Deploy to Discord, Telegram, Web, and custom platforms
+- **Local Development** - Complete local testing environment before production deployment
+
+![Hero](docs/images/hero.png)
+
+## Platform Features
+
+### Bot Management
+
+Deploy and manage multiple AI bots from a unified dashboard. Create bots with custom personalities, connect them to Discord and Telegram, and monitor their performance in real-time.
+
+![Bot Management](docs/images/bot.png)
+
+### DAO Treasury Management
+
+Deploy secure, multi-signature protected treasuries with democratic voting and automated execution. Built on Midnight's zero-knowledge smart contracts for complete privacy.
+
+![DAO Treasury](docs/images/dao-treasury.png)
 
 ## Architecture
 
+The platform consists of four primary layers:
+
+1. **Frontend Layer** - Next.js web dashboard (Port 3000)
+2. **API Layer** - Express.js orchestrator (Port 3002)
+3. **AI Layer** - Multi-tenant Eliza server (Port 3004)
+4. **Blockchain Layer** - Midnight MCP service (Port 3001)
+
 ### System Architecture
-![MidnightOS System Architecture](./docs/images/midnightos-system-architecture.png)
 
-### API Architecture  
-![MidnightOS API Architecture](./docs/images/midnightos-api-architecture.png)
+![System Architecture](docs/images/midnightos-system-architecture.png)
 
-### System Architecture Diagram
+### API Architecture
 
-```mermaid
-graph TB
-    subgraph "MidnightOS Platform"
-        Frontend["Frontend<br/>(Next.js)<br/>Port 3003"]
-        Orchestrator["Orchestrator API<br/>Port 3002"]
-        
-        subgraph "ElizaOS AI Agent (Port 3000)"
-            Character["Character System<br/>(MidnightBot)"]
-            Plugins["Plugin Architecture<br/>• SQL Database<br/>• Bootstrap Core<br/>• MCP Integration<br/>• AI Providers<br/>• Platform Connectors"]
-        end
-        
-        MCP["Midnight MCP Server<br/>Port 3001<br/>26 Blockchain Tools"]
-        Proof["Proof Server<br/>Port 6300<br/>ZK-Proof Generation"]
-        
-        Frontend <--> Orchestrator
-        Orchestrator --> Character
-        Character --> Plugins
-        Plugins -->|stdio| MCP
-        MCP --> Proof
-    end
-    
-    MCP --> Blockchain["Midnight Blockchain<br/>(Testnet-02)<br/>• Shielded Transactions<br/>• Smart Contracts<br/>• DAO Governance<br/>• Token Operations"]
-    
-    style Frontend fill:#e1f5fe
-    style Orchestrator fill:#e8f5e9
-    style Character fill:#fff3e0
-    style MCP fill:#f3e5f5
-    style Proof fill:#fce4ec
-    style Blockchain fill:#e0f2f1
-```
+![API Architecture](docs/images/midnightos-api-architecture.png)
 
-### Component Architecture
+For detailed architecture documentation, see [docs/architecture.md](docs/architecture.md).
 
-#### Frontend Layer
-- **Technology**: Next.js 15, TypeScript, TailwindCSS
-- **Purpose**: User interface for bot management, treasury operations, and DAO governance
-- **Features**: Real-time chat, wallet management, proposal creation, voting interface
-
-#### Orchestrator Service
-- **Technology**: Express.js, Prisma ORM, Docker SDK
-- **Purpose**: Platform orchestration, user management, container lifecycle management
-- **Responsibilities**:
-  - User authentication and authorization
-  - Bot instance management
-  - Multi-tenancy support
-  - Container orchestration
-
-#### ElizaOS AI Agent
-- **Framework**: ElizaOS v1.5.15
-- **Purpose**: Conversational AI for blockchain operations
-- **Components**:
-  - Character system for personality and behavior
-  - Plugin architecture for extensibility
-  - MCP integration for blockchain tools
-  - Multi-model AI support (OpenAI, Anthropic, Ollama)
-
-#### Midnight MCP Server
-- **Protocol**: Model Context Protocol (MCP)
-- **Purpose**: Bridge between AI and blockchain
-- **Capabilities**:
-  - 26 specialized blockchain tools
-  - Wallet management
-  - DAO operations
-  - Treasury management
-  - Smart contract deployment
-
-#### Proof Server
-- **Technology**: Midnight ZK-proof system
-- **Purpose**: Generate zero-knowledge proofs for private transactions
-- **Features**: Local proof generation, shielded operations support
-
-## Key Features
-
-### 1. AI-Powered DAO Management
-- Natural language interaction for complex blockchain operations
-- Automated proposal creation and management
-- Intelligent treasury fund allocation
-- Real-time voting and governance execution
-
-### 2. Privacy-Preserving Operations
-- Zero-knowledge proof integration
-- Shielded transactions for anonymity
-- Private state management
-- Confidential voting mechanisms
-
-### 3. Multi-Agent System
-- Deploy multiple specialized AI agents
-- Role-based agent configuration
-- Cross-agent communication
-- Parallel task execution
-
-### 4. Comprehensive Blockchain Tools
-- **Wallet Operations**: Balance checking, transfers, transaction history
-- **DAO Governance**: Proposal creation, voting, result tracking
-- **Treasury Management**: Fund allocation, payout processing, analytics
-- **Smart Contracts**: Deployment, interaction, verification
-- **Token Operations**: Minting, burning, transfers, registration
-
-### 5. Enterprise Features
-- Multi-tenancy support
-- Role-based access control
-- Audit logging
-- Performance monitoring
-- Scalable architecture
-
-## Technology Stack
-
-### Core Technologies
-- **Runtime**: Node.js v20+, TypeScript 5.2+
-- **Package Manager**: pnpm v10.15.0
-- **Database**: PostgreSQL, Prisma ORM
-- **Blockchain**: Midnight Network (Testnet-02)
-
-### Frontend
-- **Framework**: Next.js 15.0.0
-- **UI Components**: Radix UI, Shadcn/ui
-- **Styling**: TailwindCSS
-- **State Management**: React Context, TanStack Query
-- **Authentication**: Supabase Auth
-
-### Backend Services
-- **ElizaOS**: v1.5.15 - AI agent framework
-- **MCP Server**: Model Context Protocol implementation
-- **Orchestrator**: Express.js API server
-- **Proof Server**: Midnight ZK-proof generation
-
-### Blockchain Integration
-- **Midnight SDK**: v2.0.2
-- **Wallet**: Midnight Wallet v5.0.0
-- **Smart Contracts**: Compact language
-- **Network**: Testnet-02 endpoints
-
-### Development Tools
-- **Containerization**: Docker, Docker Compose
-- **Testing**: Jest, Supertest
-- **Linting**: ESLint, Prettier
-- **Monitoring**: OpenTelemetry, Pino logging
-
-## System Requirements
-
-### Minimum Requirements
-- **CPU**: 4 cores
-- **RAM**: 8GB
-- **Storage**: 20GB available space
-- **OS**: macOS, Linux, Windows (WSL2)
-- **Node.js**: v20.0.0 or higher
-- **pnpm**: v10.15.0 or higher
-
-### Recommended Requirements
-- **CPU**: 8 cores
-- **RAM**: 16GB
-- **Storage**: 50GB SSD
-- **Network**: Stable internet connection for blockchain sync
-
-## Installation
+## Quick Start
 
 ### Prerequisites
 
-1. Install Node.js (v20+):
+- Node.js 20+ and pnpm 10+
+- Docker and Docker Compose
+- PostgreSQL database
+- Git
+
+### Installation
+
 ```bash
-curl -fsSL https://fnm.vercel.app/install | bash
-fnm use 20
-```
-
-2. Install pnpm:
-```bash
-npm install -g pnpm@10.15.0
-```
-
-3. Install Docker (for containerized deployment):
-```bash
-# macOS
-brew install docker docker-compose
-
-# Linux
-curl -fsSL https://get.docker.com | sh
-```
-
-### Quick Start
-
-1. Clone the repository:
-```bash
-git clone https://github.com/Midnight-OS/MidnightOS.git
+# Clone repository
+git clone https://github.com/your-org/MidnightOS.git
 cd MidnightOS
-```
 
-2. Install dependencies:
-```bash
+# Install dependencies
 pnpm install
-```
 
-3. Set up environment variables:
-```bash
-# Copy environment templates
+# Initialize environment
 cp .env.example .env
+# Edit .env with your configuration
 
-# Configure services
-cd services/midnight-mcp && cp .env.example .env
-cd ../eliza-agent && cp .env.example .env
-cd ../../platform/orchestrator && cp .env.example .env
-cd ../frontend && cp .env.example .env.local
-```
+# Sync environment to all services
+pnpm env:sync
 
-4. Generate Prisma clients:
-```bash
-cd platform/orchestrator && pnpm prisma generate
-cd ../../services/midnight-mcp && pnpm prisma generate
-```
-
-5. Build all services:
-```bash
-pnpm build
-```
-
-6. Start the platform:
-```bash
-# Start individual services
-cd services/midnight-mcp && pnpm dev    # Terminal 1
-cd platform/orchestrator && pnpm dev    # Terminal 2
-cd services/eliza-agent && pnpm dev     # Terminal 3
-cd platform/frontend && pnpm dev        # Terminal 4
-
-# Or use Docker Compose
-docker-compose up
-```
-
-## Configuration
-
-### Environment Variables
-
-#### Midnight MCP Service
-```env
-DATABASE_URL=            # Prisma database connection
-NODE_ENV=development
-PORT=3001
-AGENT_ID=agent-001
-USE_EXTERNAL_PROOF_SERVER=true
-PROOF_SERVER=http://localhost:6300
-INDEXER=https://indexer.testnet-02.midnight.network/api/v1/graphql
-INDEXER_WS=wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws
-MN_NODE=https://rpc.testnet-02.midnight.network
-```
-
-#### ElizaOS Agent
-```env
-AGENT_ID=midnight-bot-agent
-OPENAI_API_KEY=          # Optional: OpenAI API key
-ANTHROPIC_API_KEY=       # Optional: Anthropic API key
-DISCORD_TOKEN=           # Optional: Discord bot token
-TELEGRAM_BOT_TOKEN=      # Optional: Telegram bot token
-```
-
-#### Orchestrator
-```env
-DATABASE_URL=            # PostgreSQL connection string
-JWT_SECRET=              # JWT signing secret
-PORT=3002
-DOCKER_HOST=unix:///var/run/docker.sock
-```
-
-#### Frontend
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3002
-NEXT_PUBLIC_MCP_URL=http://localhost:3001
-NEXT_PUBLIC_SUPABASE_URL=    # Supabase project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase anonymous key
-```
-
-### Network Configuration
-
-The platform connects to Midnight Testnet-02:
-- **RPC Endpoint**: https://rpc.testnet-02.midnight.network
-- **Indexer GraphQL**: https://indexer.testnet-02.midnight.network/api/v1/graphql
-- **WebSocket**: wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws
-
-## Services
-
-### 1. Frontend (Port 3003)
-Web interface for platform interaction
-- Bot management dashboard
-- Treasury operations interface
-- Wallet management
-- Chat interface for AI interaction
-
-### 2. ElizaOS Agent (Port 3000)
-AI agent service
-- Natural language processing
-- Blockchain operation execution
-- Multi-model AI support
-- Plugin system for extensibility
-
-### 3. Midnight MCP Server (Port 3001)
-Blockchain integration service
-- 26 specialized tools for blockchain operations
-- Wallet management
-- DAO governance
-- Smart contract deployment
-
-### 4. Orchestrator (Port 3002)
-Platform management API
-- User authentication
-- Bot lifecycle management
-- Multi-tenancy support
-- Container orchestration
-
-### 5. Proof Server (Port 6300)
-Zero-knowledge proof generation
-- Local proof generation
-- Shielded transaction support
-- Privacy-preserving operations
-
-## Development
-
-### Project Structure
-```
-MidnightOS/
-├── platform/
-│   ├── frontend/          # Next.js web application
-│   └── orchestrator/      # Platform API server
-├── services/
-│   ├── eliza-agent/       # ElizaOS AI agent
-│   └── midnight-mcp/      # MCP blockchain server
-├── docker/                # Docker configurations
-├── docs/                  # Documentation
-└── scripts/              # Utility scripts
-```
-
-### Development Workflow
-
-1. **Local Development**:
-```bash
-# Start all services in development mode
+# Start development environment
 pnpm dev
-
-# Run tests
-pnpm test
-
-# Lint code
-pnpm lint
-
-# Format code
-pnpm format
 ```
-
-2. **Building**:
-```bash
-# Build all services
-pnpm build
-
-# Build specific service
-cd services/midnight-mcp && pnpm build
-```
-
-3. **Testing**:
-```bash
-# Unit tests
-pnpm test:unit
-
-# Integration tests
-pnpm test:integration
-
-# E2E tests
-pnpm test:e2e
-```
-
-## API Documentation
-
-### API Flow Diagram
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant Orchestrator
-    participant ElizaAgent
-    participant MCP
-    participant Blockchain
-    
-    User->>Frontend: Interact with UI
-    Frontend->>Orchestrator: API Request
-    Orchestrator->>ElizaAgent: Process with AI
-    ElizaAgent->>MCP: Execute blockchain operation
-    MCP->>Blockchain: Submit transaction
-    Blockchain-->>MCP: Transaction result
-    MCP-->>ElizaAgent: Operation result
-    ElizaAgent-->>Orchestrator: AI response
-    Orchestrator-->>Frontend: API response
-    Frontend-->>User: Display result
-```
-
-### Orchestrator API Endpoints
-
-| Category | Method | Endpoint | Description |
-|----------|--------|----------|-------------|
-| **Authentication** ||||
-| | POST | `/api/auth/register` | Register new user |
-| | POST | `/api/auth/login` | User login |
-| | POST | `/api/auth/logout` | User logout |
-| | GET | `/api/auth/me` | Get current user |
-| **Bot Management** ||||
-| | GET | `/api/bots` | List user's bots |
-| | POST | `/api/bots` | Create new bot |
-| | GET | `/api/bots/:id` | Get bot details |
-| | PUT | `/api/bots/:id` | Update bot |
-| | DELETE | `/api/bots/:id` | Delete bot |
-| | POST | `/api/bots/:id/start` | Start bot |
-| | POST | `/api/bots/:id/stop` | Stop bot |
-| **Chat** ||||
-| | POST | `/api/chat` | Send message to bot |
-| | GET | `/api/chat/:sessionId` | Get conversation history |
-
-### MCP Server Tools
-
-| Category | Tool | Description |
-|----------|------|-------------|
-| **Wallet** ||||
-| | `wallet_status` | Get wallet sync status |
-| | `wallet_address` | Get wallet address |
-| | `wallet_balance` | Get balance |
-| | `wallet_send` | Send transaction |
-| **DAO** ||||
-| | `dao_proposal_create` | Create proposal |
-| | `dao_vote` | Cast vote |
-| | `dao_proposals` | List proposals |
-| | `dao_state` | Get DAO state |
-| **Treasury** ||||
-| | `treasury_balance` | Get treasury balance |
-| | `treasury_fund` | Fund treasury |
-| | `treasury_payout` | Process payout |
-| | `treasury_analytics` | Get analytics |
-
-## Deployment
 
 ### Docker Deployment
 
-1. **Build Docker images**:
 ```bash
-docker-compose build
+# Build and start all services
+./scripts/docker-up.sh
+
+# View logs
+docker compose logs -f
+
+# Stop services
+./scripts/docker-down.sh
 ```
 
-2. **Start services**:
-```bash
-docker-compose up -d
+## Project Structure
+
+```
+MidnightOS/
+├── docs/              # Comprehensive documentation
+├── platform/
+│   ├── frontend/      # Next.js web application
+│   └── orchestrator/  # API server and bot management
+├── services/
+│   ├── eliza-agent/   # Multi-tenant AI server
+│   └── midnight-mcp/  # Blockchain integration service
+├── scripts/           # Deployment and utility scripts
+└── docker/            # Docker configurations
 ```
 
-3. **Monitor logs**:
+## Documentation
+
+### Getting Started
+- [Quick Start Guide](docs/quickstart.md) - Complete setup instructions
+- [User Guide](docs/user-guide.md) - Platform usage and features
+- [Bot Builder Tutorial](docs/bot-builder.md) - Create and configure bots
+
+### Technical Documentation
+- [Architecture Overview](docs/architecture.md) - System design and components
+- [API Reference](docs/api-reference.md) - Complete API documentation
+- [Treasury Management](docs/treasury.md) - DAO treasury setup and automation
+
+### Operations
+- [Deployment Guide](docs/deployment.md) - Production deployment procedures
+- [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
+- [Scripts Reference](scripts/README.md) - Utility scripts documentation
+
+## Development
+
+### Running Services Locally
+
 ```bash
-docker-compose logs -f
+# Terminal 1: Start MCP service
+cd services/midnight-mcp
+PORT=3001 pnpm start
+
+# Terminal 2: Start shared Eliza server
+cd services/eliza-agent
+pnpm start:server
+
+# Terminal 3: Start orchestrator
+cd platform/orchestrator
+pnpm start
+
+# Terminal 4: Start frontend
+cd platform/frontend
+pnpm dev
 ```
 
-### Production Deployment
+### Environment Configuration
 
-1. **Environment Setup**:
-- Configure production environment variables
-- Set up SSL certificates
-- Configure domain names
-- Set up database backups
+The platform uses a centralized environment configuration system. See [ENVIRONMENT_SYNC.md](docs/ENVIRONMENT_SYNC.md) for details on managing environment variables across services.
 
-2. **Security Configuration**:
-- Enable authentication
-- Configure CORS policies
-- Set up rate limiting
-- Enable monitoring
+### Testing
 
-3. **Scaling Considerations**:
-- Use container orchestration (Kubernetes)
-- Implement load balancing
-- Set up database replication
-- Configure caching layers
+```bash
+# Run all tests
+pnpm test
 
-## Security
+# Run specific service tests
+cd platform/orchestrator && pnpm test
+cd services/eliza-agent && pnpm test
+cd services/midnight-mcp && pnpm test
+```
 
-### Security Features
-- JWT-based authentication
-- Role-based access control
-- Encrypted wallet storage
-- Zero-knowledge proofs for privacy
-- Audit logging
-- Rate limiting
+## Production Deployment
 
-### Security Best Practices
-1. Never commit sensitive data (private keys, API keys)
-2. Use environment variables for configuration
-3. Enable HTTPS in production
-4. Regular security audits
-5. Keep dependencies updated
-6. Monitor for suspicious activity
+### Network Configuration
 
-### Wallet Security
-- Seed phrases are encrypted at rest
-- Private keys never leave the secure enclave
-- Multi-signature support for treasury operations
-- Hardware wallet integration support
+MidnightOS supports multiple Midnight network modes:
+
+- **Undeployed** - Local development with embedded proof server
+- **TestNet** - Midnight TestNet deployment
+- **Standalone** - Self-hosted infrastructure
+
+Switch between networks using the provided scripts:
+
+```bash
+# Switch to TestNet
+./scripts/switch-to-testnet.sh
+
+# Switch to Standalone
+./scripts/switch-to-standalone.sh
+```
+
+### Security Considerations
+
+- Store all private keys and seeds securely
+- Use environment variables for sensitive configuration
+- Enable authentication in production environments
+- Review [docs/troubleshooting.md](docs/troubleshooting.md) for security best practices
+
+**Note on Repository Credentials**: API keys and credentials present in this repository were included intentionally for demonstration and development purposes. All keys are valid but temporary and will be revoked. For production deployments, always use secure environment variable management and never commit sensitive credentials to version control.
+
+## Technology Stack
+
+- **Frontend**: Next.js 15, React 18, TailwindCSS
+- **Backend**: Node.js, Express.js, Prisma ORM
+- **AI**: ElizaOS, OpenAI API
+- **Blockchain**: Midnight Network, Zero-Knowledge Proofs
+- **Database**: PostgreSQL
+- **Deployment**: Docker, Docker Compose
 
 ## Contributing
 
-We welcome contributions to MidnightOS. Please follow these guidelines:
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/your-feature`
-3. **Commit changes**: `git commit -m 'Add new feature'`
-4. **Push to branch**: `git push origin feature/your-feature`
-5. **Submit a pull request**
-
-### Code Standards
-- Follow TypeScript best practices
-- Write comprehensive tests
-- Document new features
-- Maintain consistent code style
-- No emoji in codebase
-
-### Commit Guidelines
-- Use conventional commits format
-- Write clear, descriptive messages
-- Reference issues when applicable
-- Include breaking changes documentation
+We welcome contributions to MidnightOS. Please review our contribution guidelines and submit pull requests to the main repository.
 
 ## Support
 
-### Documentation
-- [User Guide](./docs/user-guide.md)
-- [API Reference](./docs/api-reference.md)
-- [Architecture Details](./docs/architecture.md)
-- [Troubleshooting](./docs/troubleshooting.md)
-
-### Community
-- GitHub Issues: [Report bugs or request features](https://github.com/Midnight-OS/MidnightOS/issues)
-- Documentation: [Read the docs](https://github.com/Midnight-OS/MidnightOS#readme)
+- **Documentation**: [docs/](docs/)
+- **Issues**: [GitHub Issues](https://github.com/your-org/MidnightOS/issues)
+- **Community**: [Discord Server](https://discord.gg/midnightos)
 
 ## License
 
-MidnightOS is licensed under the MIT License. See [LICENSE](./LICENSE) file for details.
+[License information to be added]
 
 ## Acknowledgments
 
-Built with:
-- [ElizaOS](https://github.com/elizaos/elizaos) - AI agent framework
-- [Midnight Network](https://midnight.network) - Privacy-focused blockchain
-- [Model Context Protocol](https://modelcontextprotocol.io) - AI-blockchain bridge
-- [Next.js](https://nextjs.org) - React framework
-- [Supabase](https://supabase.com) - Backend as a service
+Built for the Midnight blockchain ecosystem. Special thanks to the Midnight Labs team for their support and infrastructure.
 
 ---
 
-**MidnightOS** - Reimagining DAO Treasury Management with AI
-
-Version 1.0.0 | Built for the decentralized future
+**Version**: 1.0.0  
+**Last Updated**: September 2025  
+**Status**: Production Ready

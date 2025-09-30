@@ -1,7 +1,7 @@
 {
   "name": "midnightos",
   "version": "1.0.0",
-  "description": "Multi-user platform for blockchain tools, AI agents, and social bot deployment",
+  "description": "AI-powered platform for autonomous agent deployment on the Midnight blockchain",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -9,40 +9,21 @@
     "platform/*"
   ],
   "scripts": {
-    "install:all": "pnpm install",
-    "build:all": "pnpm run build:orchestrator && pnpm run build:frontend",
+    "build": "pnpm run build:mcp && pnpm run build:orchestrator && pnpm run build:frontend",
     "build:orchestrator": "cd platform/orchestrator && pnpm run build",
     "build:frontend": "cd platform/frontend && pnpm run build",
     "build:mcp": "cd services/midnight-mcp && pnpm run build",
-    "dev": "pnpm run dev:platform",
-    "dev:platform": "concurrently \"cd platform/orchestrator && pnpm run dev\" \"cd services/midnight-mcp && pnpm run dev\" \"cd platform/frontend && pnpm run dev\"",
-    "dev:orchestrator": "cd platform/orchestrator && pnpm run dev",
-    "dev:frontend": "cd platform/frontend && pnpm run dev",
-    "dev:mcp": "cd services/midnight-mcp && pnpm run dev",
-    "start:orchestrator": "cd platform/orchestrator && node dist/api.js",
-    "start:mcp": "cd services/midnight-mcp && node dist/server.js",
-    "setup:local": "./setup.sh setup local",
-    "setup:docker": "./setup.sh setup docker",
-    "start:local": "./setup.sh start local",
-    "start:docker": "./setup.sh start docker",
-    "stop:docker": "./setup.sh stop docker",
+    "dev": "concurrently \"cd services/midnight-mcp && pnpm start\" \"cd services/eliza-agent && PORT=3004 WALLET_MCP_URL=http://localhost:3001 pnpm start:server\" \"cd platform/orchestrator && PORT=3002 pnpm tsx src/api.ts\" \"cd platform/frontend && PORT=3003 pnpm dev\"",
+    "dev:orchestrator": "cd platform/orchestrator && PORT=3002 pnpm tsx src/api.ts",
+    "dev:frontend": "cd platform/frontend && PORT=3003 pnpm dev",
+    "dev:mcp": "cd services/midnight-mcp && pnpm start",
+    "dev:eliza": "cd services/eliza-agent && PORT=3004 WALLET_MCP_URL=http://localhost:3001 pnpm start:server",
     "docker:up": "docker compose -f docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f docker/docker-compose.yml down",
-    "docker:build": "./scripts/docker-build.sh",
-    "docker:build:deploy": "./scripts/docker-build-deploy.sh",
-    "docker:start": "./scripts/docker-start.sh",
-    "docker:stop": "./scripts/docker-down.sh",
-    "docker:deploy": "./scripts/docker-deploy.sh",
-    "docker:up:sync": "./scripts/docker-up.sh",
-    "docker:down:clean": "./scripts/docker-down.sh",
     "test": "pnpm run test:orchestrator",
     "test:orchestrator": "cd platform/orchestrator && pnpm test",
     "clean": "rm -rf node_modules services/*/node_modules platform/*/node_modules pnpm-lock.yaml",
-    "clean:build": "rm -rf services/*/dist platform/*/dist platform/*/build",
-    "env:sync": "node scripts/sync-env.js",
-    "env:check": "node scripts/sync-env.js --check",
-    "env:validate": "node scripts/sync-env.js --validate",
-    "env:sync:verbose": "node scripts/sync-env.js --verbose"
+    "clean:build": "rm -rf services/*/dist platform/*/dist platform/*/build"
   },
   "dependencies": {
     "concurrently": "^8.2.2"
@@ -56,8 +37,14 @@
     "pnpm": ">=8.0.0"
   },
   "packageManager": "pnpm@10.15.0",
-  "main": "test-integration.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "keywords": [
+    "ai",
+    "blockchain",
+    "midnight",
+    "agents",
+    "web3",
+    "dao"
+  ],
+  "author": "MidnightOS Team",
+  "license": "MIT"
 }
